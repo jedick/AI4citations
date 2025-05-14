@@ -19,7 +19,7 @@ Then, run the `python` command and open the generated URL to launch the app.
 
 ```
 pip install transformers gradio
-python app/app.py
+python app.py
 ```
 
 App usage:

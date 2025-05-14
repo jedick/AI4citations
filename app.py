@@ -20,10 +20,12 @@ def predict(claim, evidence):
     #   https://github.com/jedick/ML-capstone-project
     # Output {label: confidence} dictionary format as expected by gr.Label()
     #   https://github.com/gradio-app/gradio/issues/11170
-    return {
+    prediction = {
         d["label"]: d["score"]
         for d in pipe({"text": evidence, "text_pair": claim}, top_k=3)
     }
+    # Return two instances of the prediction to send to different Gradio components
+    return prediction, prediction
 
 
 # Function to select the model
@@ -37,8 +39,12 @@ def select_model(model_name):
 
 
 def prediction_to_df(prediction=None):
+    """
+    Convert prediction text to DataFrame for barplot
+    """
     if prediction is None:
         # This shows a half-filled plot for app auto-reload
+        # (running with gradio app.py, not python app.py)
         prediction = {"SUPPORT": 0.5, "NEI": 0.5, "REFUTE": 0.5}
     elif prediction == "":
         # This shows an empty plot for app initialization
@@ -47,9 +53,9 @@ def prediction_to_df(prediction=None):
         # This shows full-height bars when the model is changed
         prediction = {"SUPPORT": 1, "NEI": 1, "REFUTE": 1}
     else:
-        # Convert predictions (text result from API) to dictionary
+        # Convert predictions text to dictionary
         prediction = eval(prediction)
-        # Rename dictionary keys (different models have different labels)
+        # Rename dictionary keys to use consistent labels across models
         prediction = {
             ("SUPPORT" if k == "entailment" else k): v for k, v in prediction.items()
         }
@@ -64,15 +70,36 @@ def prediction_to_df(prediction=None):
         prediction = {k: prediction[k] for k in labels}
     # Convert dictionary to DataFrame with one column (Probability)
     df = pd.DataFrame.from_dict(prediction, orient="index", columns=["Probability"])
-    # This moves the index to the Class column
+    # Move the index to the Class column
     return df.reset_index(names="Class")
+
+
+def change_visualization(choice):
+    if choice == "barplot":
+        barplot = gr.update(visible=True)
+        label = gr.update(visible=False)
+    elif choice == "label":
+        barplot = gr.update(visible=False)
+        label = gr.update(visible=True)
+    return barplot, label
 
 
 # Gradio interface setup
 with gr.Blocks() as demo:
 
+    # Layout
     with gr.Row():
-        with gr.Column(scale=2, min_width=300):
+        with gr.Column(scale=3):
+            gr.Markdown(
+                """
+            # AI4citations
+            ### Scientific citation verification
+
+            - Basic claim verification: Enter a claim and evidence
+            - Evidence retrieval: Enter a claim then get evidence from a PDF
+            - Claim extraction: Enter text, get claim from text, then get evidence from a PDF
+            """
+            )
             # Create dropdown menu to select the model
             dropdown = gr.Dropdown(
                 choices=[
@@ -84,12 +111,17 @@ with gr.Blocks() as demo:
                 value=MODEL_NAME,
                 label="Select Model",
             )
-            input_claim = gr.Textbox(label="Enter the claim (or hypothesis)")
-            input_evidence = gr.Textbox(label="Enter the evidence (or premise)")
-            prediction = gr.Textbox(label="Prediction")
-            query_button = gr.Button("Submit")
+            claim = gr.Textbox(label="Enter the claim (or hypothesis)")
+            evidence = gr.Textbox(label="Enter the evidence (or premise)")
+            submit = gr.Button("Submit")
 
-        with gr.Column(scale=1, min_width=300):
+        with gr.Column(scale=2):
+            radio = gr.Radio(
+                ["barplot", "label"], value="barplot", label="Visualization"
+            )
+            # Keep the prediction textbox hidden
+            with gr.Accordion(visible=False):
+                prediction = gr.Textbox(label="Prediction")
             barplot = gr.BarPlot(
                 prediction_to_df,
                 x="Class",
@@ -99,23 +131,49 @@ with gr.Blocks() as demo:
                 inputs=prediction,
                 y_lim=([0, 1]),
             )
+            label = gr.Label(visible=False)
+            gr.Examples(
+                examples="ex_accurate",
+                inputs=[claim, evidence],
+                outputs=[prediction, label],
+                fn=predict,
+                label="Examples of accurate predictions",
+                run_on_click=True,
+                example_labels=pd.read_csv("ex_accurate/log.csv")["label"].tolist(),
+            )
+            gr.Examples(
+                examples="ex_inaccurate",
+                inputs=[claim, evidence],
+                outputs=[prediction, label],
+                fn=predict,
+                label="Examples of inaccurate predictions",
+                run_on_click=True,
+                example_labels=pd.read_csv("ex_inaccurate/log.csv")["label"].tolist(),
+            )
+            gr.Markdown(
+                """
+            ### About
+            - App repo: <https://github.com/jedick/AI4citations>
+            - ML project: <https://github.com/jedick/ML-capstone-project>
+            - Base model: <https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli>
+            - Fine-tuned on [SciFact](https://github.com/allenai/scifact) and [Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity/)
+            """
+            )
+
+    # Event listeners
 
     # Click button or press Enter to submit
     gr.on(
-        triggers=[input_claim.submit, input_evidence.submit, query_button.click],
+        triggers=[claim.submit, evidence.submit, submit.click],
         fn=predict,
-        inputs=[input_claim, input_evidence],
-        outputs=[prediction],
+        inputs=[claim, evidence],
+        outputs=[prediction, label],
     )
 
-    # Clear the previous predictions as soon as a new model is selected
-    # See https://www.gradio.app/guides/blocks-and-event-listeners
-    def clear_prediction():
-        return "Model changed! Waiting for updated predictions..."
-
+    # Clear the previous predictions when a different model is selected
     gr.on(
         triggers=[dropdown.select],
-        fn=clear_prediction,
+        fn=lambda: "Model changed! Waiting for updated predictions...",
         outputs=[prediction],
     )
 
@@ -125,8 +183,11 @@ with gr.Blocks() as demo:
         inputs=dropdown,
     ).then(
         fn=predict,
-        inputs=[input_claim, input_evidence],
-        outputs=[prediction],
+        inputs=[claim, evidence],
+        outputs=[prediction, label],
     )
+
+    # Change visualization
+    radio.change(fn=change_visualization, inputs=radio, outputs=[barplot, label])
 
 demo.launch()
