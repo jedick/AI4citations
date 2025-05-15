@@ -1,5 +1,6 @@
-import gradio as gr
 import pandas as pd
+import gradio as gr
+from retrieval import retrieve_from_pdf
 
 if gr.NO_RELOAD:
     from transformers import pipeline
@@ -85,7 +86,7 @@ def change_visualization(choice):
 
 
 # Gradio interface setup
-with gr.Blocks() as demo:
+with gr.Blocks(theme="NoCrypt/miku") as demo:
 
     # Layout
     with gr.Row():
@@ -111,8 +112,30 @@ with gr.Blocks() as demo:
                 value=MODEL_NAME,
                 label="Select Model",
             )
-            claim = gr.Textbox(label="Enter the claim (or hypothesis)")
-            evidence = gr.Textbox(label="Enter the evidence (or premise)")
+            claim = gr.Textbox(
+                label="Claim",
+                info="aka hypothesis",
+                placeholder="Type claim or use Get Claim from Text (Enter to submit)",
+            )
+            evidence = gr.TextArea(
+                label="Evidence",
+                info="aka premise",
+                placeholder="Type evidence or use Get Evidence from PDF (Enter to submit)",
+            )
+            with gr.Row():
+                with gr.Accordion("Get Claim from Text", open=False):
+                    text = gr.TextArea(label="Text", placeholder="Not working yet!", interactive=False)
+                with gr.Accordion("Get Evidence from PDF", open=False):
+                    pdf_file = gr.File(label="Upload PDF", type="filepath")
+                    get_evidence = gr.Button(value="Get Evidence")
+                    top_k = gr.Slider(
+                        1,
+                        10,
+                        value=5,
+                        step=1,
+                        interactive=True,
+                        label="Top k sentences",
+                    )
             submit = gr.Button("Submit")
 
         with gr.Column(scale=2):
@@ -152,11 +175,18 @@ with gr.Blocks() as demo:
             )
             gr.Markdown(
                 """
-            ### About
-            - App repo: <https://github.com/jedick/AI4citations>
-            - ML project: <https://github.com/jedick/ML-capstone-project>
-            - Base model: <https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli>
-            - Fine-tuned on [SciFact](https://github.com/allenai/scifact) and [Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity/)
+            ### Acknowledgments
+            - GitHub:
+              - App repo: [jedick/AI4citations](https://github.com/jedick/AI4citations)
+              - ML project: [jedick/ML-capstone-project](https://github.com/jedick/ML-capstone-project)
+              - Datasets for fine-tuning:
+                - [allenai/SciFact](https://github.com/allenai/scifact)
+                - [ScienceNLP-Lab/Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity)
+              - Evidence retrieval: [xhluca/bm25s](https://github.com/xhluca/bm25s)
+            - Hugging Face:
+              - Base model: [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli)
+              - Fine-tuned model: [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint)
+              - Gradio theme: [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku)
             """
             )
 
@@ -185,6 +215,14 @@ with gr.Blocks() as demo:
         fn=predict,
         inputs=[claim, evidence],
         outputs=[prediction, label],
+    )
+
+    # Get evidence from PDF
+    gr.on(
+        triggers = [pdf_file.upload, get_evidence.click],
+        fn=retrieve_from_pdf,
+        inputs=[pdf_file, claim, top_k],
+        outputs=evidence
     )
 
     # Change visualization
