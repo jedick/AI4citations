@@ -119,8 +119,8 @@ with gr.Blocks(theme=my_theme) as demo:
                 ### Three ways to use this app
 
                 1. **Claim verification**: Input a claim and evidence
-                2. **Evidence retrieval**: Input a claim and get evidence from PDF
-                3. **Claim extraction**: Input text and get claim from text
+                2. **Evidence retrieval**: Input a claim to get evidence from PDF
+                3. **Claim extraction**: Input a text to get claim from text
                 """
                 )
             # Create dropdown menu to select the model

@@ -7,7 +7,7 @@ This app was developed as part of an [ML capstone project](https://github.com/je
 
 - Enter a claim and evidence statements to verify the claim
 - The app runs the model and outputs a classification: Support, Refute, or Not Enough Information (NEI)
-  - The [default model](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) was fine-tuned on two datasets, [SciFact](https://github.com/allenai/scifact) and [Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity/)
+  - The [default model](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) was fine-tuned on two datasets, SciFact and Citation-Integrity
   - The [base model](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli) is DeBERTa pre-trained on multiple natural language inference (NLI) datasets
   - See the [blog post](https://jedick.github.io/blog/experimenting-with-transformer-models-for-citation-verification/) for more information on fine-tuning
 - App built with [Gradio](https://github.com/gradio-app/gradio)
@@ -34,7 +34,7 @@ Screenshot of app with [example text](https://huggingface.co/datasets/nyu-mll/mu
 
 ![Screenshot of AI4citations app](./images/AI4citations_screenshot.png)
 
-## Evaluation
+## Evals
 
 Predictions were made on the SciFact test set.
 
