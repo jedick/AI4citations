@@ -57,15 +57,11 @@ def prediction_to_df(prediction=None):
     """
     Convert prediction text to DataFrame for barplot
     """
-    if prediction is None:
-        # This shows a half-filled plot for app auto-reload
-        # (running with gradio app.py, not python app.py)
-        prediction = {"SUPPORT": 0.5, "NEI": 0.5, "REFUTE": 0.5}
-    elif prediction == "":
-        # This shows an empty plot for app initialization
+    if prediction is None or prediction == "":
+        # Show an empty plot for app initialization or auto-reload
         prediction = {"SUPPORT": 0, "NEI": 0, "REFUTE": 0}
     elif "Model" in prediction:
-        # This shows full-height bars when the model is changed
+        # Show full-height bars when the model is changed
         prediction = {"SUPPORT": 1, "NEI": 1, "REFUTE": 1}
     else:
         # Convert predictions text to dictionary
@@ -109,16 +105,24 @@ with gr.Blocks(theme=my_theme) as demo:
     # Layout
     with gr.Row():
         with gr.Column(scale=3):
-            gr.Markdown(
-                """
-            # AI4citations
-            ### Scientific citation verification
+            with gr.Row():
+                gr.Markdown(
+                    """
+                # AI4citations
+                ## Scientific citation verification
 
-            - Claim verification: Enter a claim and evidence
-            - Evidence retrieval: Enter a claim then get evidence from PDF
-            - Claim extraction: Enter text, get claim from text, then get evidence from PDF
-            """
-            )
+                *Press Enter in a textbox or click Submit to run the model.*
+                """
+                )
+                gr.Markdown(
+                    """
+                ### Three ways to use this app
+
+                1. **Claim verification**: Input a claim and evidence
+                2. **Evidence retrieval**: Input a claim and get evidence from PDF
+                3. **Claim extraction**: Input text and get claim from text
+                """
+                )
             # Create dropdown menu to select the model
             dropdown = gr.Dropdown(
                 choices=[
@@ -134,12 +138,12 @@ with gr.Blocks(theme=my_theme) as demo:
             claim = gr.Textbox(
                 label="Claim",
                 info="aka hypothesis",
-                placeholder="Type claim or use Get Claim from Text (Enter to submit)",
+                placeholder="Input claim or use Get Claim from Text",
             )
             evidence = gr.TextArea(
                 label="Evidence",
                 info="aka premise",
-                placeholder="Type evidence or use Get Evidence from PDF (Enter to submit)",
+                placeholder="Input evidence or use Get Evidence from PDF",
             )
             with gr.Row():
                 with gr.Accordion("Get Claim from Text", open=False):
@@ -162,9 +166,7 @@ with gr.Blocks(theme=my_theme) as demo:
             submit = gr.Button("Submit")
 
         with gr.Column(scale=2):
-            radio = gr.Radio(
-                ["barplot", "label"], value="barplot", label="Visualization"
-            )
+            radio = gr.Radio(["barplot", "label"], value="barplot", label="Results")
             # Keep the prediction textbox hidden
             with gr.Accordion(visible=False):
                 prediction = gr.Textbox(label="Prediction")
@@ -183,39 +185,39 @@ with gr.Blocks(theme=my_theme) as demo:
                     "*Prediction performance with jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint:*"
                 ),
                 gr.Examples(
-                    examples="ex_accurate",
+                    examples="examples/accurate",
                     inputs=[claim, evidence],
                     outputs=[prediction, label],
                     fn=query_model_for_examples,
                     label="Accurate",
                     run_on_click=True,
-                    example_labels=pd.read_csv("ex_accurate/log.csv")["label"].tolist(),
+                    example_labels=pd.read_csv("examples/accurate/log.csv")[
+                        "label"
+                    ].tolist(),
                 )
                 gr.Examples(
-                    examples="ex_inaccurate",
+                    examples="examples/inaccurate",
                     inputs=[claim, evidence],
                     outputs=[prediction, label],
                     fn=query_model_for_examples,
                     label="Inaccurate",
                     run_on_click=True,
-                    example_labels=pd.read_csv("ex_inaccurate/log.csv")[
+                    example_labels=pd.read_csv("examples/inaccurate/log.csv")[
                         "label"
                     ].tolist(),
                 )
             gr.Markdown(
                 """
-            ### Acknowledgments
-            - On GitHub
-              - App repo: [jedick/AI4citations](https://github.com/jedick/AI4citations)
-              - ML project: [jedick/ML-capstone-project](https://github.com/jedick/ML-capstone-project)
-              - Datasets for fine-tuning
-                - [allenai/SciFact](https://github.com/allenai/scifact)
-                - [ScienceNLP-Lab/Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity)
-              - Evidence retrieval: [xhluca/bm25s](https://github.com/xhluca/bm25s)
-            - On Hugging Face
-              - Base model: [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli)
-              - Fine-tuned model: [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint)
-              - Gradio theme: [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku)
+            ### Sources
+            - ML project: [jedick/ML-capstone-project](https://github.com/jedick/ML-capstone-project)
+                - App repository: [jedick/AI4citations](https://github.com/jedick/AI4citations)
+                - Fine-tuned model: [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint)
+            - Datasets used for fine-tuning
+                - SciFact: [allenai/SciFact](https://github.com/allenai/scifact)
+                - Citation-Integrity (CitInt): [ScienceNLP-Lab/Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity)
+            - Base model: [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli)
+            - Evidence retrieval: [xhluca/bm25s](https://github.com/xhluca/bm25s)
+            - Gradio theme: [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku)
             """
             )
 

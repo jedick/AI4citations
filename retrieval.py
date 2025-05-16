@@ -34,7 +34,7 @@ def retrieve_from_pdf(pdf_file, query, k=10):
     corpus_tokens = bm25s.tokenize(corpus, stopwords="en")
     # Initialize the BM25 model
     retriever = bm25s.BM25()
-    retriever.index(corpus_tokens)
+    retriever.index(corpus_tokens, show_progress=False)
     # Tokenize the query
     query_tokens = bm25s.tokenize(query)
 
