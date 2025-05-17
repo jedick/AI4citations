@@ -1,0 +1,6 @@
+pandas
+gradio
+pymupdf
+unidecode
+nltk
+bm25s
