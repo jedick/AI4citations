@@ -1,5 +1,7 @@
 pandas
 gradio
+torch
+transformers
 pymupdf
 unidecode
 nltk

@@ -1,9 +1,12 @@
 import pandas as pd
 import gradio as gr
+from transformers import pipeline
+import nltk
 from retrieval import retrieve_from_pdf
 
 if gr.NO_RELOAD:
-    from transformers import pipeline
+    # Resource punkt_tab not found during application startup on HF spaces
+    nltk.download("punkt_tab")
 
     # Keep track of the model name in a global variable so correct model is shown after page refresh
     # https://github.com/gradio-app/gradio/issues/3173
