@@ -281,4 +281,5 @@ with gr.Blocks(theme=my_theme) as demo:
         api_name=False,
     )
 
-demo.launch()
+if __name__ == "__main__":
+    demo.launch()

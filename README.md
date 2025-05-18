@@ -1,4 +1,5 @@
 [![Open in Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-sm-dark.svg)](https://huggingface.co/spaces/jedick/AI4citations)
+[![Codecov test coverage](https://codecov.io/gh/jedick/AI4citations/graph/badge.svg)](https://app.codecov.io/gh/jedick/AI4citations)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # AI-Powered Citation Verification
@@ -14,7 +15,7 @@ Features:
 - Model selection: Choose from a fine-tuned model (default) or the pretrained base model
   - The [default model](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) was fine-tuned on two datasets, [SciFact](https://github.com/allenai/scifact) and [Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity/)
   - The [base model](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli) is DeBERTa pre-trained on multiple natural language inference (NLI) datasets
-  - See the [blog post](https://jedick.github.io/blog/experimenting-with-transformer-models-for-citation-verification/) for more information on fine-tuning
+  - See this [blog post](https://jedick.github.io/blog/experimenting-with-transformer-models-for-citation-verification/) for more information on fine-tuning
 
 ## Running the app
 
