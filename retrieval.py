@@ -39,7 +39,8 @@ def retrieve_from_pdf(pdf_file, query, k=10):
     query_tokens = bm25s.tokenize(query)
 
     # Get top-k results
-    results, scores = retriever.retrieve(query_tokens, corpus=corpus, k=k)
+    # Use int(k) in case we get str value (as in retrieval example)
+    results, scores = retriever.retrieve(query_tokens, corpus=corpus, k=int(k))
     ## Print results
     # for i in range(results.shape[1]):
     #    doc, score = results[0, i], scores[0, i]

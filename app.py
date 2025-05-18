@@ -184,25 +184,37 @@ with gr.Blocks(theme=my_theme) as demo:
                 gr.Markdown(
                     "*Prediction performance with jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint:*"
                 ),
+                with gr.Row():
+                    gr.Examples(
+                        examples="examples/accurate",
+                        inputs=[claim, evidence],
+                        outputs=[prediction, label],
+                        fn=query_model_for_examples,
+                        label="Accurate",
+                        run_on_click=True,
+                        example_labels=pd.read_csv("examples/accurate/log.csv")[
+                            "label"
+                        ].tolist(),
+                    )
+                    gr.Examples(
+                        examples="examples/inaccurate",
+                        inputs=[claim, evidence],
+                        outputs=[prediction, label],
+                        fn=query_model_for_examples,
+                        label="Inaccurate",
+                        run_on_click=True,
+                        example_labels=pd.read_csv("examples/inaccurate/log.csv")[
+                            "label"
+                        ].tolist(),
+                    )
                 gr.Examples(
-                    examples="examples/accurate",
-                    inputs=[claim, evidence],
-                    outputs=[prediction, label],
-                    fn=query_model_for_examples,
-                    label="Accurate",
-                    run_on_click=True,
-                    example_labels=pd.read_csv("examples/accurate/log.csv")[
-                        "label"
-                    ].tolist(),
-                )
-                gr.Examples(
-                    examples="examples/inaccurate",
-                    inputs=[claim, evidence],
-                    outputs=[prediction, label],
-                    fn=query_model_for_examples,
-                    label="Inaccurate",
-                    run_on_click=True,
-                    example_labels=pd.read_csv("examples/inaccurate/log.csv")[
+                    examples="examples/retrieval",
+                    inputs=[pdf_file, claim],
+                    outputs=evidence,
+                    fn=retrieve_from_pdf,
+                    label="Retrieval",
+                    run_on_click=False,
+                    example_labels=pd.read_csv("examples/retrieval/log.csv")[
                         "label"
                     ].tolist(),
                 )
