@@ -6,6 +6,5 @@ pymupdf
 unidecode
 nltk
 bm25s
-unittest
 coverage
 codecov
