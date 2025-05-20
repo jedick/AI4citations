@@ -68,8 +68,8 @@ output_file = f"predict_with_PDFs_k{top_k}.csv"
 ## For development and monitoring only:
 ## (We can't upload the evidences retrieved from PDFs because they might contain copyrighted material)
 ## Convert labels and evidences to DataFrame and save as CSV
-# results_df = pd.DataFrame(zip(labels, evidences), columns=["label", "evidence"])
-# results_df.to_csv(output_file, index=False)
+#results_df = pd.DataFrame(zip(labels, evidences), columns=["label", "evidence"])
+#results_df.to_csv(output_file, index=False)
 
 # For uploading test results:
 results_df = pd.DataFrame(labels, columns=["label"])

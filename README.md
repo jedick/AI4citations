@@ -40,8 +40,8 @@ Predictions were made on the SciFact test set.
 Results:
 
 - Macro F1 with gold evidence: 0.834
-- Macro F1 with retrieved evidence (k=5): 0.692
-- Macro F1 with retrieved evidence (k=10): 0.646
+- Macro F1 with retrieved evidence (k=5): 0.649
+- Macro F1 with retrieved evidence (k=10): 0.654
 
 ## Acknowledgments
 
