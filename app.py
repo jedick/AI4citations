@@ -25,7 +25,7 @@ def query_model(claim, evidence):
         # Send a dictionary containing {"text", "text_pair"} keys; use top_k=3 to get results for all classes
         #   https://huggingface.co/docs/transformers/v4.51.3/en/main_classes/pipelines#transformers.TextClassificationPipeline.__call__.inputs
         # Put evidence before claim
-        #   https://github.com/jedick/ML-capstone-project
+        #   https://github.com/jedick/MLE-capstone-project
         # Output {label: confidence} dictionary format as expected by gr.Label()
         #   https://github.com/gradio-app/gradio/issues/11170
         d["label"]: d["score"]
@@ -224,7 +224,7 @@ with gr.Blocks(theme=my_theme) as demo:
             gr.Markdown(
                 """
             ### Sources
-            - ML project: [jedick/ML-capstone-project](https://github.com/jedick/ML-capstone-project)
+            - ML engineering project: [jedick/MLE-capstone-project](https://github.com/jedick/MLE-capstone-project)
                 - App repository: [jedick/AI4citations](https://github.com/jedick/AI4citations)
                 - Fine-tuned model: [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint)
             - Datasets used for fine-tuning

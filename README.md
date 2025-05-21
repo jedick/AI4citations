@@ -5,7 +5,7 @@
 # AI-Powered Citation Verification
 
 A web app for scientific citation verification.
-This app was developed as part of an [ML capstone project](https://github.com/jedick/ML-capstone-project).
+This app was developed as part of an [ML engineering capstone project](https://github.com/jedick/MLE-capstone-project).
 
 Features:
 

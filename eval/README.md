@@ -2,7 +2,7 @@
 
 Scripts and data to evaluate the app on the SciFact test set.
 
-- `scifact_test_data.R`: Script to generate the following CSV from `*.jsonl` claim and corpus files [available here](https://github.com/jedick/ML-capstone-project/tree/main/data/scifact)
+- `scifact_test_data.R`: Script to generate the following CSV from `*.jsonl` claim and corpus files [available here](https://github.com/jedick/MLE-capstone-project/tree/main/data/scifact)
 - `scifact_test_data.csv`: The test dataset including claim, label, corpus_id, title, and abstract
 - `scifact_test_data_sources.csv`: For each unique corpus_id, the Semantic Scholar URL and DOI for locating PDFs
   - *Because of copyright, PDFs are not uploaded here*
