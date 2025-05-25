@@ -3,6 +3,7 @@ import gradio as gr
 from transformers import pipeline
 import nltk
 from retrieval import retrieve_from_pdf
+import os
 
 if gr.NO_RELOAD:
     # Resource punkt_tab not found during application startup on HF spaces
@@ -11,45 +12,6 @@ if gr.NO_RELOAD:
     # Keep track of the model name in a global variable so correct model is shown after page refresh
     # https://github.com/gradio-app/gradio/issues/3173
     MODEL_NAME = "jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint"
-    pipe = pipeline(
-        "text-classification",
-        model=MODEL_NAME,
-    )
-
-
-def query_model(claim, evidence):
-    """
-    Get prediction for a pair of claim and evidence
-    """
-    prediction = {
-        # Send a dictionary containing {"text", "text_pair"} keys; use top_k=3 to get results for all classes
-        #   https://huggingface.co/docs/transformers/v4.51.3/en/main_classes/pipelines#transformers.TextClassificationPipeline.__call__.inputs
-        # Put evidence before claim
-        #   https://github.com/jedick/MLE-capstone-project
-        # Output {label: confidence} dictionary format as expected by gr.Label()
-        #   https://github.com/gradio-app/gradio/issues/11170
-        d["label"]: d["score"]
-        for d in pipe({"text": evidence, "text_pair": claim}, top_k=3)
-    }
-    # Return two instances of the prediction to send to different Gradio components
-    return prediction, prediction
-
-
-def query_model_for_examples(claim, evidence):
-    """
-    A duplicate of the previous function, used to keep the API names clean
-    """
-    prediction = {
-        d["label"]: d["score"]
-        for d in pipe({"text": evidence, "text_pair": claim}, top_k=3)
-    }
-    return prediction, prediction
-
-
-# Function to select the model
-def select_model(model_name):
-    global pipe, MODEL_NAME
-    MODEL_NAME = model_name
     pipe = pipeline(
         "text-classification",
         model=MODEL_NAME,
@@ -88,16 +50,6 @@ def prediction_to_df(prediction=None):
     return df.reset_index(names="Class")
 
 
-def change_visualization(choice):
-    if choice == "barplot":
-        barplot = gr.update(visible=True)
-        label = gr.update(visible=False)
-    elif choice == "label":
-        barplot = gr.update(visible=False)
-        label = gr.update(visible=True)
-    return barplot, label
-
-
 # Setup theme without background image
 my_theme = gr.Theme.from_hub("NoCrypt/miku")
 my_theme.set(body_background_fill="#FFFFFF", body_background_fill_dark="#000000")
@@ -112,51 +64,33 @@ with gr.Blocks(theme=my_theme) as demo:
                 gr.Markdown(
                     """
                 # AI4citations
-                ## Scientific citation verification
 
-                *Press Enter in a textbox or click Submit to run the model.*
+                ### Usage:
+
+                1. Input a **Claim**
+                2. Input **Evidence** statements
+                - *Optional:* Upload a PDF and click Get Evidence
                 """
                 )
                 gr.Markdown(
                     """
-                ### Three ways to use this app
+                ## *AI-powered citation verification*
 
-                1. **Claim verification**: Input a claim and evidence
-                2. **Evidence retrieval**: Input a claim to get evidence from PDF
-                3. **Claim extraction**: Input a text to get claim from text
+                ### To make predictions:
+
+                - Hit 'Enter' in the **Claim** text box,
+                - Hit 'Shift-Enter' in the **Evidence** text box, or
+                - Click Get Evidence
                 """
                 )
-            # Create dropdown menu to select the model
-            dropdown = gr.Dropdown(
-                choices=[
-                    # TODO: For bert-base-uncased, how can we set num_labels = 2 in HF pipeline?
-                    # (num_labels is available in AutoModelForSequenceClassification.from_pretrained)
-                    # "bert-base-uncased",
-                    "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
-                    "jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint",
-                ],
-                value=MODEL_NAME,
-                label="Model",
-            )
             claim = gr.Textbox(
-                label="Claim",
+                label="1. Claim",
                 info="aka hypothesis",
                 placeholder="Input claim or use Get Claim from Text",
             )
-            evidence = gr.TextArea(
-                label="Evidence",
-                info="aka premise",
-                placeholder="Input evidence or use Get Evidence from PDF",
-            )
             with gr.Row():
-                with gr.Accordion("Get Claim from Text", open=False):
-                    text = gr.TextArea(
-                        label="Text",
-                        placeholder="Under construction!",
-                        interactive=False,
-                    )
-                with gr.Accordion("Get Evidence from PDF", open=False):
-                    pdf_file = gr.File(label="Upload PDF", type="filepath")
+                with gr.Accordion("Get Evidence from PDF", open=True):
+                    pdf_file = gr.File(label="Upload PDF", type="filepath", height=120)
                     get_evidence = gr.Button(value="Get Evidence")
                     top_k = gr.Slider(
                         1,
@@ -166,10 +100,14 @@ with gr.Blocks(theme=my_theme) as demo:
                         interactive=True,
                         label="Top k sentences",
                     )
-            submit = gr.Button("Submit")
+                evidence = gr.TextArea(
+                    label="2. Evidence",
+                    info="aka premise",
+                    placeholder="Input evidence or use Get Evidence from PDF",
+                )
+            submit = gr.Button("3. Submit", visible=False)
 
         with gr.Column(scale=2):
-            radio = gr.Radio(["barplot", "label"], value="barplot", label="Results")
             # Keep the prediction textbox hidden
             with gr.Accordion(visible=False):
                 prediction = gr.Textbox(label="Prediction")
@@ -181,42 +119,54 @@ with gr.Blocks(theme=my_theme) as demo:
                 color_map={"SUPPORT": "green", "NEI": "#888888", "REFUTE": "#FF8888"},
                 inputs=prediction,
                 y_lim=([0, 1]),
+                visible=False,
             )
-            label = gr.Label(visible=False)
+            label = gr.Label()
+            with gr.Accordion("Settings", open=False):
+                # Create dropdown menu to select the model
+                dropdown = gr.Dropdown(
+                    choices=[
+                        # TODO: For bert-base-uncased, how can we set num_labels = 2 in HF pipeline?
+                        # (num_labels is available in AutoModelForSequenceClassification.from_pretrained)
+                        # "bert-base-uncased",
+                        "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+                        "jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint",
+                    ],
+                    value=MODEL_NAME,
+                    label="Model",
+                )
+                radio = gr.Radio(["label", "barplot"], value="label", label="Results")
             with gr.Accordion("Examples", open=False):
-                gr.Markdown(
-                    "*Prediction performance with jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint:*"
-                ),
+                gr.Markdown("*Examples are run when clicked*"),
                 with gr.Row():
-                    gr.Examples(
-                        examples="examples/accurate",
+                    support_example = gr.Examples(
+                        examples="examples/Support",
+                        label="Support",
                         inputs=[claim, evidence],
-                        outputs=[prediction, label],
-                        fn=query_model_for_examples,
-                        label="Accurate",
-                        run_on_click=True,
-                        example_labels=pd.read_csv("examples/accurate/log.csv")[
+                        example_labels=pd.read_csv("examples/Support/log.csv")[
                             "label"
                         ].tolist(),
                     )
-                    gr.Examples(
-                        examples="examples/inaccurate",
+                    nei_example = gr.Examples(
+                        examples="examples/NEI",
+                        label="NEI",
                         inputs=[claim, evidence],
-                        outputs=[prediction, label],
-                        fn=query_model_for_examples,
-                        label="Inaccurate",
-                        run_on_click=True,
-                        example_labels=pd.read_csv("examples/inaccurate/log.csv")[
+                        example_labels=pd.read_csv("examples/NEI/log.csv")[
                             "label"
                         ].tolist(),
                     )
-                gr.Examples(
+                    refute_example = gr.Examples(
+                        examples="examples/Refute",
+                        label="Refute",
+                        inputs=[claim, evidence],
+                        example_labels=pd.read_csv("examples/Refute/log.csv")[
+                            "label"
+                        ].tolist(),
+                    )
+                retrieval_example = gr.Examples(
                     examples="examples/retrieval",
-                    inputs=[pdf_file, claim],
-                    outputs=evidence,
-                    fn=retrieve_from_pdf,
                     label="Retrieval",
-                    run_on_click=False,
+                    inputs=[pdf_file, claim],
                     example_labels=pd.read_csv("examples/retrieval/log.csv")[
                         "label"
                     ].tolist(),
@@ -236,6 +186,70 @@ with gr.Blocks(theme=my_theme) as demo:
             """
             )
 
+    # Functions
+
+    def query_model(claim, evidence):
+        """
+        Get prediction for a claim and evidence pair
+        """
+        prediction = {
+            # Send a dictionary containing {"text", "text_pair"} keys; use top_k=3 to get results for all classes
+            #   https://huggingface.co/docs/transformers/v4.51.3/en/main_classes/pipelines#transformers.TextClassificationPipeline.__call__.inputs
+            # Put evidence before claim
+            #   https://github.com/jedick/MLE-capstone-project
+            # Output {label: confidence} dictionary format as expected by gr.Label()
+            #   https://github.com/gradio-app/gradio/issues/11170
+            d["label"]: d["score"]
+            for d in pipe({"text": evidence, "text_pair": claim}, top_k=3)
+        }
+        # Return two instances of the prediction to send to different Gradio components
+        return prediction, prediction
+
+    def use_model(model_name):
+        """
+        Use the specified model
+        """
+        global pipe, MODEL_NAME
+        MODEL_NAME = model_name
+        pipe = pipeline(
+            "text-classification",
+            model=MODEL_NAME,
+        )
+
+    def change_visualization(choice):
+        if choice == "barplot":
+            barplot = gr.update(visible=True)
+            label = gr.update(visible=False)
+        elif choice == "label":
+            barplot = gr.update(visible=False)
+            label = gr.update(visible=True)
+        return barplot, label
+
+    # From gradio/client/python/gradio_client/utils.py
+    def is_http_url_like(possible_url) -> bool:
+        """
+        Check if the given value is a string that looks like an HTTP(S) URL.
+        """
+        if not isinstance(possible_url, str):
+            return False
+        return possible_url.startswith(("http://", "https://"))
+
+    def select_example(value, evt: gr.EventData):
+        # Get the PDF file and claim from the event data
+        claim, evidence = value[1]
+        # Add the directory path
+        return claim, evidence
+
+    def select_retrieval_example(value, evt: gr.EventData):
+        """
+        Get the PDF file and claim from the event data.
+        """
+        pdf_file, claim = value[1]
+        # Add the directory path
+        if not is_http_url_like(pdf_file):
+            pdf_file = f"examples/retrieval/{pdf_file}"
+        return pdf_file, claim
+
     # Event listeners
 
     # Click the submit button or press Enter to submit
@@ -246,18 +260,12 @@ with gr.Blocks(theme=my_theme) as demo:
         outputs=[prediction, label],
     )
 
-    # Clear the previous predictions when the model is changed
+    # Get evidence from PDF and run the model
     gr.on(
-        triggers=[dropdown.select],
-        fn=lambda: "Model changed! Waiting for updated predictions...",
-        outputs=[prediction],
-        api_name=False,
-    )
-
-    # Update the predictions after changing the model
-    dropdown.change(
-        fn=select_model,
-        inputs=dropdown,
+        triggers=[get_evidence.click],
+        fn=retrieve_from_pdf,
+        inputs=[pdf_file, claim, top_k],
+        outputs=evidence,
     ).then(
         fn=query_model,
         inputs=[claim, evidence],
@@ -265,12 +273,65 @@ with gr.Blocks(theme=my_theme) as demo:
         api_name=False,
     )
 
-    # Get evidence from PDF
+    # Handle "Support" examples
     gr.on(
-        triggers=[pdf_file.upload, get_evidence.click],
+        triggers=[support_example.dataset.select],
+        fn=select_example,
+        inputs=support_example.dataset,
+        outputs=[claim, evidence],
+        api_name=False,
+    ).then(
+        fn=query_model,
+        inputs=[claim, evidence],
+        outputs=[prediction, label],
+        api_name=False,
+    )
+
+    # Handle "NEI" examples
+    gr.on(
+        triggers=[nei_example.dataset.select],
+        fn=select_example,
+        inputs=nei_example.dataset,
+        outputs=[claim, evidence],
+        api_name=False,
+    ).then(
+        fn=query_model,
+        inputs=[claim, evidence],
+        outputs=[prediction, label],
+        api_name=False,
+    )
+
+    # Handle "Refute" examples
+    gr.on(
+        triggers=[refute_example.dataset.select],
+        fn=select_example,
+        inputs=refute_example.dataset,
+        outputs=[claim, evidence],
+        api_name=False,
+    ).then(
+        fn=query_model,
+        inputs=[claim, evidence],
+        outputs=[prediction, label],
+        api_name=False,
+    )
+
+    # Handle evidence retrieval examples: get evidence from PDF and run the model
+    gr.on(
+        triggers=[retrieval_example.dataset.select],
+        fn=select_retrieval_example,
+        inputs=retrieval_example.dataset,
+        outputs=[pdf_file, claim],
+        api_name=False,
+    ).then(
         fn=retrieve_from_pdf,
         inputs=[pdf_file, claim, top_k],
         outputs=evidence,
+        api_name=False,
+    ).then(
+        fn=query_model,
+        inputs=[claim, evidence],
+        outputs=[prediction, label],
+        api_name=False,
     )
 
     # Change visualization
@@ -281,5 +342,26 @@ with gr.Blocks(theme=my_theme) as demo:
         api_name=False,
     )
 
+    # Clear the previous predictions when the model is changed
+    gr.on(
+        triggers=[dropdown.select],
+        fn=lambda: "Model changed! Waiting for updated predictions...",
+        outputs=[prediction],
+        api_name=False,
+    )
+
+    # Change the model the update the predictions
+    dropdown.change(
+        fn=use_model,
+        inputs=dropdown,
+    ).then(
+        fn=query_model,
+        inputs=[claim, evidence],
+        outputs=[prediction, label],
+        api_name=False,
+    )
+
+
 if __name__ == "__main__":
-    demo.launch()
+    # allowed_paths is needed to upload PDFs from specific example directory
+    demo.launch(allowed_paths=[f"{os.getcwd()}/examples/retrieval"])
