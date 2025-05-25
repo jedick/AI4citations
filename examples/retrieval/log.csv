@@ -1,4 +1,5 @@
-pdf_file,claim,top_k,label
-https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.0030197&type=printable,"Falsified artemisinin family drugs with no active ingredient can be life-threatening.",5,SciFact
-CRISPR.pdf,"CRISPR evolution has been described as Lamarckian",5,"CRISPR (Support)"
-CRISPR.pdf,"CRISPR evolution can't be Lamarckian",5,"CRISPR (Refute)"
+pdf_file,claim,label
+https://journals.plos.org/plosmedicine/article/file?id=10.1371/journal.pmed.0030197&type=printable,"Falsified artemisinin family drugs with no active ingredient can be life-threatening.","SciFact (Support)"
+CRISPR.pdf,"CRISPR is DNA and Cas is protein","CRISPR (Support)"
+CRISPR.pdf,"CRISPR is RNA and Cas is protein","CRISPR (NEI)"
+CRISPR.pdf,"CRISPR is protein and Cas is DNA","CRISPR (Refute)"

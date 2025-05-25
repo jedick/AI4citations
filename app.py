@@ -183,6 +183,7 @@ with gr.Blocks(theme=my_theme) as demo:
             - Base model: [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli)
             - Evidence retrieval: [xhluca/bm25s](https://github.com/xhluca/bm25s)
             - Gradio theme: [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku)
+            - Examples: [MNLI (Poirot)](https://huggingface.co/datasets/nyu-mll/multi_nli/viewer/default/train?row=37&views%5B%5D=train), [CRISPR (evidence)](https://en.wikipedia.org/wiki/CRISPR)
             """
             )
 
