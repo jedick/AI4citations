@@ -54,42 +54,33 @@ def prediction_to_df(prediction=None):
 my_theme = gr.Theme.from_hub("NoCrypt/miku")
 my_theme.set(body_background_fill="#FFFFFF", body_background_fill_dark="#000000")
 
+# Custom CSS to center content
+custom_css = """
+.center-content {
+    text-align: center;
+    display:block;
+}
+"""
+
+# Define the HTML for Font Awesome
+font_awesome_html = '<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">'
+
 # Gradio interface setup
-with gr.Blocks(theme=my_theme) as demo:
+with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
 
     # Layout
     with gr.Row():
         with gr.Column(scale=3):
             with gr.Row():
-                gr.Markdown(
-                    """
-                # AI4citations
-
-                ### Usage:
-
-                1. Input a **Claim**
-                2. Input **Evidence** statements
-                - *Optional:* Upload a PDF and click Get Evidence
-                """
-                )
-                gr.Markdown(
-                    """
-                ## *AI-powered citation verification*
-
-                ### To make predictions:
-
-                - Hit 'Enter' in the **Claim** text box,
-                - Hit 'Shift-Enter' in the **Evidence** text box, or
-                - Click Get Evidence
-                """
-                )
+                gr.Markdown("# AI4citations")
+                gr.Markdown("## *AI-powered scientific citation verification*")
             claim = gr.Textbox(
                 label="1. Claim",
                 info="aka hypothesis",
-                placeholder="Input claim or use Get Claim from Text",
+                placeholder="Input claim",
             )
             with gr.Row():
-                with gr.Accordion("Get Evidence from PDF", open=True):
+                with gr.Accordion("Get Evidence from PDF"):
                     pdf_file = gr.File(label="Upload PDF", type="filepath", height=120)
                     get_evidence = gr.Button(value="Get Evidence")
                     top_k = gr.Slider(
@@ -121,8 +112,8 @@ with gr.Blocks(theme=my_theme) as demo:
                 y_lim=([0, 1]),
                 visible=False,
             )
-            label = gr.Label()
-            with gr.Accordion("Settings", open=False):
+            label = gr.Label(label="Results")
+            with gr.Accordion("Settings"):
                 # Create dropdown menu to select the model
                 dropdown = gr.Dropdown(
                     choices=[
@@ -136,7 +127,7 @@ with gr.Blocks(theme=my_theme) as demo:
                     label="Model",
                 )
                 radio = gr.Radio(["label", "barplot"], value="label", label="Results")
-            with gr.Accordion("Examples", open=False):
+            with gr.Accordion("Examples"):
                 gr.Markdown("*Examples are run when clicked*"),
                 with gr.Row():
                     support_example = gr.Examples(
@@ -171,21 +162,65 @@ with gr.Blocks(theme=my_theme) as demo:
                         "label"
                     ].tolist(),
                 )
-            gr.Markdown(
+
+    # Sources and acknowledgments
+
+    with gr.Row():
+        with gr.Column(scale=3):
+            with gr.Row():
+                with gr.Column(scale=1):
+                    gr.Markdown(
+                        """
+                    ### Usage:
+
+                    1. Input a **Claim**
+                    2. Input **Evidence** statements
+                    - *Optional:* Upload a PDF and click Get Evidence
+                    """
+                    )
+                with gr.Column(scale=2):
+                    gr.Markdown(
+                        """
+                    ### To make predictions:
+
+                    - Hit 'Enter' in the **Claim** text box,
+                    - Hit 'Shift-Enter' in the **Evidence** text box, or
+                    - Click Get Evidence
+                    """
+                    )
+
+        with gr.Column(scale=2, elem_classes=["center-content"]):
+            with gr.Accordion("Sources", open=False):
+                gr.Markdown(
+                    """
+                #### *Capstone project*
+                - <i class="fa-brands fa-github"></i> [jedick/MLE-capstone-project](https://github.com/jedick/MLE-capstone-project) (project repo)
+                - <i class="fa-brands fa-github"></i> [jedick/AI4citations](https://github.com/jedick/AI4citations) (app repo)
                 """
-            ### Sources
-            - ML engineering project: [jedick/MLE-capstone-project](https://github.com/jedick/MLE-capstone-project)
-                - App repository: [jedick/AI4citations](https://github.com/jedick/AI4citations)
-                - Fine-tuned model: [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint)
-            - Datasets used for fine-tuning
-                - SciFact: [allenai/SciFact](https://github.com/allenai/scifact)
-                - Citation-Integrity (CitInt): [ScienceNLP-Lab/Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity)
-            - Base model: [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli)
-            - Evidence retrieval: [xhluca/bm25s](https://github.com/xhluca/bm25s)
-            - Gradio theme: [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku)
-            - Examples: [MNLI (Poirot)](https://huggingface.co/datasets/nyu-mll/multi_nli/viewer/default/train?row=37&views%5B%5D=train), [CRISPR (evidence)](https://en.wikipedia.org/wiki/CRISPR)
-            """
-            )
+                )
+                gr.Markdown(
+                    """
+                #### *Models*
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) (fine-tuned)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli) (base)
+                """
+                )
+                gr.Markdown(
+                    """
+                #### *Datasets for fine-tuning*
+                - <i class="fa-brands fa-github"></i> [allenai/SciFact](https://github.com/allenai/scifact) (SciFact)
+                - <i class="fa-brands fa-github"></i> [ScienceNLP-Lab/Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity) (CitInt)
+                """
+                )
+                gr.Markdown(
+                    """
+                #### *Other sources*
+                - <i class="fa-brands fa-github"></i> [xhluca/bm25s](https://github.com/xhluca/bm25s) (evidence retrieval)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [nyu-mll/multi_nli](https://huggingface.co/datasets/nyu-mll/multi_nli/viewer/default/train?row=37&views%5B%5D=train) (MNLI example)
+                - <img src="https://plos.org/wp-content/uploads/2020/01/logo-color-blue.svg" style="height: 1.4em; display: inline-block;"> [Medicine](https://doi.org/10.1371/journal.pmed.0030197), <i class="fa-brands fa-wikipedia-w"></i> [CRISPR](https://en.wikipedia.org/wiki/CRISPR) (retrieval examples)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku) (theme)
+                """
+                )
 
     # Functions
 
@@ -206,9 +241,9 @@ with gr.Blocks(theme=my_theme) as demo:
         # Return two instances of the prediction to send to different Gradio components
         return prediction, prediction
 
-    def use_model(model_name):
+    def select_model(model_name):
         """
-        Use the specified model
+        Select the specified model
         """
         global pipe, MODEL_NAME
         MODEL_NAME = model_name
@@ -353,7 +388,7 @@ with gr.Blocks(theme=my_theme) as demo:
 
     # Change the model the update the predictions
     dropdown.change(
-        fn=use_model,
+        fn=select_model,
         inputs=dropdown,
     ).then(
         fn=query_model,
