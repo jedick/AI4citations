@@ -3,10 +3,10 @@ import pandas
 from app import *
 
 
-class TestRetrieval(unittest.TestCase):
+class TestApp(unittest.TestCase):
 
     def test_prediction_to_df(self):
-        prediction = '{"SUPPORT": 0, "NEI": 0, "REFUTE": 0}'
+        prediction = '{"Support": 0, "NEI": 0, "Refute": 0}'
         self.assertEqual(
             type(prediction_to_df(prediction)), pandas.core.frame.DataFrame
         )

@@ -8,6 +8,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
+import spaces
 
 
 def is_running_in_hf_spaces():
@@ -254,6 +255,7 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
 
     # Functions
 
+    @spaces.GPU(duration=10)
     def query_model(claim, evidence):
         """
         Get prediction for a claim and evidence pair
