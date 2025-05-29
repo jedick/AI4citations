@@ -65,6 +65,9 @@ custom_css = """
 # Define the HTML for Font Awesome
 font_awesome_html = '<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">'
 
+# Callback for user feedback
+callback = gr.CSVLogger()
+
 # Gradio interface setup
 with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
 
@@ -80,22 +83,26 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                 placeholder="Input claim",
             )
             with gr.Row():
-                with gr.Accordion("Get Evidence from PDF"):
-                    pdf_file = gr.File(label="Upload PDF", type="filepath", height=120)
-                    get_evidence = gr.Button(value="Get Evidence")
-                    top_k = gr.Slider(
-                        1,
-                        10,
-                        value=5,
-                        step=1,
-                        interactive=True,
-                        label="Top k sentences",
+                with gr.Column(scale=2):
+                    with gr.Accordion("Get Evidence from PDF"):
+                        pdf_file = gr.File(
+                            label="Upload PDF", type="filepath", height=120
+                        )
+                        get_evidence = gr.Button(value="Get Evidence")
+                        top_k = gr.Slider(
+                            1,
+                            10,
+                            value=5,
+                            step=1,
+                            interactive=True,
+                            label="Top k sentences",
+                        )
+                with gr.Column(scale=3):
+                    evidence = gr.TextArea(
+                        label="2. Evidence",
+                        info="aka premise",
+                        placeholder="Input evidence or use Get Evidence from PDF",
                     )
-                evidence = gr.TextArea(
-                    label="2. Evidence",
-                    info="aka premise",
-                    placeholder="Input evidence or use Get Evidence from PDF",
-                )
             submit = gr.Button("3. Submit", visible=False)
 
         with gr.Column(scale=2):
@@ -113,20 +120,14 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                 visible=False,
             )
             label = gr.Label(label="Results")
-            with gr.Accordion("Settings"):
-                # Create dropdown menu to select the model
-                dropdown = gr.Dropdown(
-                    choices=[
-                        # TODO: For bert-base-uncased, how can we set num_labels = 2 in HF pipeline?
-                        # (num_labels is available in AutoModelForSequenceClassification.from_pretrained)
-                        # "bert-base-uncased",
-                        "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
-                        "jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint",
-                    ],
-                    value=MODEL_NAME,
-                    label="Model",
-                )
-                radio = gr.Radio(["label", "barplot"], value="label", label="Results")
+            with gr.Accordion("Feedback"):
+                gr.Markdown(
+                    "*Click a button with the correct label to improve this app*<br>**NOTE:** the claim and evidence will also be logged"
+                ),
+                with gr.Row():
+                    flag_support = gr.Button("Support")
+                    flag_nei = gr.Button("NEI")
+                    flag_refute = gr.Button("Refute")
             with gr.Accordion("Examples"):
                 gr.Markdown("*Examples are run when clicked*"),
                 with gr.Row():
@@ -156,14 +157,12 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                     )
                 retrieval_example = gr.Examples(
                     examples="examples/retrieval",
-                    label="Retrieval",
+                    label="Get Evidence from PDF",
                     inputs=[pdf_file, claim],
                     example_labels=pd.read_csv("examples/retrieval/log.csv")[
                         "label"
                     ].tolist(),
                 )
-
-    # Sources and acknowledgments
 
     with gr.Row():
         with gr.Column(scale=3):
@@ -174,8 +173,7 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                     ### Usage:
 
                     1. Input a **Claim**
-                    2. Input **Evidence** statements
-                    - *Optional:* Upload a PDF and click Get Evidence
+                    2. Input **Evidence** statements OR upload a PDF and click **Get Evidence**
                     """
                     )
                 with gr.Column(scale=2):
@@ -185,12 +183,26 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
 
                     - Hit 'Enter' in the **Claim** text box,
                     - Hit 'Shift-Enter' in the **Evidence** text box, or
-                    - Click Get Evidence
+                    - Click **Get Evidence**
                     """
                     )
 
-        with gr.Column(scale=2, elem_classes=["center-content"]):
-            with gr.Accordion("Sources", open=False):
+        with gr.Column(scale=2):
+            with gr.Accordion("Settings", open=False):
+                # Create dropdown menu to select the model
+                dropdown = gr.Dropdown(
+                    choices=[
+                        # TODO: For bert-base-uncased, how can we set num_labels = 2 in HF pipeline?
+                        # (num_labels is available in AutoModelForSequenceClassification.from_pretrained)
+                        # "bert-base-uncased",
+                        "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+                        "jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint",
+                    ],
+                    value=MODEL_NAME,
+                    label="Model",
+                )
+                radio = gr.Radio(["label", "barplot"], value="label", label="Results")
+            with gr.Accordion("Sources", open=False, elem_classes=["center_content"]):
                 gr.Markdown(
                     """
                 #### *Capstone project*
@@ -217,10 +229,13 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                 #### *Other sources*
                 - <i class="fa-brands fa-github"></i> [xhluca/bm25s](https://github.com/xhluca/bm25s) (evidence retrieval)
                 - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [nyu-mll/multi_nli](https://huggingface.co/datasets/nyu-mll/multi_nli/viewer/default/train?row=37&views%5B%5D=train) (MNLI example)
-                - <img src="https://plos.org/wp-content/uploads/2020/01/logo-color-blue.svg" style="height: 1.4em; display: inline-block;"> [Medicine](https://doi.org/10.1371/journal.pmed.0030197), <i class="fa-brands fa-wikipedia-w"></i> [CRISPR](https://en.wikipedia.org/wiki/CRISPR) (retrieval examples)
+                - <img src="https://plos.org/wp-content/uploads/2020/01/logo-color-blue.svg" style="height: 1.4em; display: inline-block;"> [Medicine](https://doi.org/10.1371/journal.pmed.0030197), <i class="fa-brands fa-wikipedia-w"></i> [CRISPR](https://en.wikipedia.org/wiki/CRISPR) (get evidence examples)
                 - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku) (theme)
                 """
                 )
+
+    # Setup callback to log user feedback
+    callback.setup([claim, evidence, label], "user_feedback")
 
     # Functions
 
@@ -395,6 +410,26 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
         inputs=[claim, evidence],
         outputs=[prediction, label],
         api_name=False,
+    )
+
+    # Log user feedback when button is clicked
+    flag_support.click(
+        lambda *args: callback.flag(list(args), flag_option="Support"),
+        [claim, evidence, label],
+        None,
+        preprocess=False,
+    )
+    flag_nei.click(
+        lambda *args: callback.flag(list(args), flag_option="NEI"),
+        [claim, evidence, label],
+        None,
+        preprocess=False,
+    )
+    flag_refute.click(
+        lambda *args: callback.flag(list(args), flag_option="Refute"),
+        [claim, evidence, label],
+        None,
+        preprocess=False,
     )
 
 
