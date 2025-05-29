@@ -4,6 +4,18 @@ from transformers import pipeline
 import nltk
 from retrieval import retrieve_from_pdf
 import os
+import json
+from datetime import datetime
+from pathlib import Path
+from uuid import uuid4
+
+
+def is_running_in_hf_spaces():
+    """
+    Detects if app is running in Hugging Face Spaces
+    """
+    return "SPACE_ID" in os.environ
+
 
 if gr.NO_RELOAD:
     # Resource punkt_tab not found during application startup on HF spaces
@@ -16,6 +28,23 @@ if gr.NO_RELOAD:
         "text-classification",
         model=MODEL_NAME,
     )
+
+    # Setup user feedback file for uploading to HF dataset
+    # https://huggingface.co/spaces/Wauplin/space_to_dataset_saver
+    # https://huggingface.co/docs/huggingface_hub/v0.16.3/en/guides/upload#scheduled-uploads
+    USER_FEEDBACK_DIR = Path("user_feedback")
+    USER_FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)
+    USER_FEEDBACK_PATH = USER_FEEDBACK_DIR / f"train-{uuid4()}.json"
+
+    if is_running_in_hf_spaces():
+        from huggingface_hub import CommitScheduler
+
+        scheduler = CommitScheduler(
+            repo_id="AI4citations-feedback",
+            repo_type="dataset",
+            folder_path=USER_FEEDBACK_DIR,
+            path_in_repo="data",
+        )
 
 
 def prediction_to_df(prediction=None):
@@ -65,9 +94,6 @@ custom_css = """
 # Define the HTML for Font Awesome
 font_awesome_html = '<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">'
 
-# Callback for user feedback
-callback = gr.CSVLogger()
-
 # Gradio interface setup
 with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
 
@@ -78,7 +104,7 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                 gr.Markdown("# AI4citations")
                 gr.Markdown("## *AI-powered scientific citation verification*")
             claim = gr.Textbox(
-                label="1. Claim",
+                label="Claim",
                 info="aka hypothesis",
                 placeholder="Input claim",
             )
@@ -99,7 +125,7 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                         )
                 with gr.Column(scale=3):
                     evidence = gr.TextArea(
-                        label="2. Evidence",
+                        label="Evidence",
                         info="aka premise",
                         placeholder="Input evidence or use Get Evidence from PDF",
                     )
@@ -122,7 +148,7 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
             label = gr.Label(label="Results")
             with gr.Accordion("Feedback"):
                 gr.Markdown(
-                    "*Click a button with the correct label to improve this app*<br>**NOTE:** the claim and evidence will also be logged"
+                    "*Click on the correct label to help improve this app*<br>**NOTE:** The claim and evidence will also be saved"
                 ),
                 with gr.Row():
                     flag_support = gr.Button("Support")
@@ -172,8 +198,9 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                         """
                     ### Usage:
 
-                    1. Input a **Claim**
-                    2. Input **Evidence** statements OR upload a PDF and click **Get Evidence**
+                    - Input a **Claim**, then:
+                        - Upload a PDF and click **Get Evidence** OR
+                        - Input **Evidence** statements yourself
                     """
                     )
                 with gr.Column(scale=2):
@@ -181,16 +208,17 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                         """
                     ### To make predictions:
 
-                    - Hit 'Enter' in the **Claim** text box,
-                    - Hit 'Shift-Enter' in the **Evidence** text box, or
-                    - Click **Get Evidence**
+                    - Hit 'Enter' in the **Claim** text box OR
+                    - Hit 'Shift-Enter' in the **Evidence** text box
+
+                    _Predictions are also made after clicking **Get Evidence**_
                     """
                     )
 
         with gr.Column(scale=2):
             with gr.Accordion("Settings", open=False):
                 # Create dropdown menu to select the model
-                dropdown = gr.Dropdown(
+                model = gr.Dropdown(
                     choices=[
                         # TODO: For bert-base-uncased, how can we set num_labels = 2 in HF pipeline?
                         # (num_labels is available in AutoModelForSequenceClassification.from_pretrained)
@@ -233,9 +261,6 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                 - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku) (theme)
                 """
                 )
-
-    # Setup callback to log user feedback
-    callback.setup([claim, evidence, label], "user_feedback")
 
     # Functions
 
@@ -300,6 +325,61 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
         if not is_http_url_like(pdf_file):
             pdf_file = f"examples/retrieval/{pdf_file}"
         return pdf_file, claim
+
+    def append_feedback(
+        claim: str, evidence: str, model: str, label: str, user_label: str
+    ) -> None:
+        """
+        Append input/outputs and user feedback to a JSON Lines file.
+        """
+        with USER_FEEDBACK_PATH.open("a") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "claim": claim,
+                        "evidence": evidence,
+                        "model": model,
+                        "prediction": label,
+                        "user_label": user_label,
+                        "datetime": datetime.now().isoformat(),
+                    }
+                )
+            )
+            f.write("\n")
+        gr.Success(f"Saved your feedback: {user_label}", duration=2, title="Thank you!")
+
+    def save_feedback_support(*args) -> None:
+        """
+        Save user feedback: Support
+        """
+        if is_running_in_hf_spaces():
+            # Use a thread lock to avoid concurrent writes from different users.
+            with scheduler.lock:
+                append_feedback(*args, user_label="Support")
+        else:
+            append_feedback(*args, user_label="Support")
+
+    def save_feedback_nei(*args) -> None:
+        """
+        Save user feedback: NEI
+        """
+        if is_running_in_hf_spaces():
+            # Use a thread lock to avoid concurrent writes from different users.
+            with scheduler.lock:
+                append_feedback(*args, user_label="NEI")
+        else:
+            append_feedback(*args, user_label="NEI")
+
+    def save_feedback_refute(*args) -> None:
+        """
+        Save user feedback: Refute
+        """
+        if is_running_in_hf_spaces():
+            # Use a thread lock to avoid concurrent writes from different users.
+            with scheduler.lock:
+                append_feedback(*args, user_label="Refute")
+        else:
+            append_feedback(*args, user_label="Refute")
 
     # Event listeners
 
@@ -395,16 +475,16 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
 
     # Clear the previous predictions when the model is changed
     gr.on(
-        triggers=[dropdown.select],
+        triggers=[model.select],
         fn=lambda: "Model changed! Waiting for updated predictions...",
         outputs=[prediction],
         api_name=False,
     )
 
     # Change the model the update the predictions
-    dropdown.change(
+    model.change(
         fn=select_model,
-        inputs=dropdown,
+        inputs=model,
     ).then(
         fn=query_model,
         inputs=[claim, evidence],
@@ -414,22 +494,19 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
 
     # Log user feedback when button is clicked
     flag_support.click(
-        lambda *args: callback.flag(list(args), flag_option="Support"),
-        [claim, evidence, label],
-        None,
-        preprocess=False,
+        fn=save_feedback_support,
+        inputs=[claim, evidence, model, label],
+        outputs=None,
     )
     flag_nei.click(
-        lambda *args: callback.flag(list(args), flag_option="NEI"),
-        [claim, evidence, label],
-        None,
-        preprocess=False,
+        fn=save_feedback_nei,
+        inputs=[claim, evidence, model, label],
+        outputs=None,
     )
     flag_refute.click(
-        lambda *args: callback.flag(list(args), flag_option="Refute"),
-        [claim, evidence, label],
-        None,
-        preprocess=False,
+        fn=save_feedback_refute,
+        inputs=[claim, evidence, model, label],
+        outputs=None,
     )
 
 

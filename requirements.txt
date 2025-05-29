@@ -6,5 +6,6 @@ pymupdf
 unidecode
 nltk
 bm25s
+git+https://github.com/huggingface/huggingface_hub
 coverage
 codecov
