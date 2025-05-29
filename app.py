@@ -53,25 +53,15 @@ def prediction_to_df(prediction=None):
     """
     if prediction is None or prediction == "":
         # Show an empty plot for app initialization or auto-reload
-        prediction = {"SUPPORT": 0, "NEI": 0, "REFUTE": 0}
+        prediction = {"Support": 0, "NEI": 0, "Refute": 0}
     elif "Model" in prediction:
         # Show full-height bars when the model is changed
-        prediction = {"SUPPORT": 1, "NEI": 1, "REFUTE": 1}
+        prediction = {"Support": 1, "NEI": 1, "Refute": 1}
     else:
         # Convert predictions text to dictionary
         prediction = eval(prediction)
-        # Rename dictionary keys to use consistent labels across models
-        prediction = {
-            ("SUPPORT" if k == "entailment" else k): v for k, v in prediction.items()
-        }
-        prediction = {
-            ("NEI" if k == "neutral" else k): v for k, v in prediction.items()
-        }
-        prediction = {
-            ("REFUTE" if k == "contradiction" else k): v for k, v in prediction.items()
-        }
         # Use custom order for labels (pipe() returns labels in descending order of softmax score)
-        labels = ["SUPPORT", "NEI", "REFUTE"]
+        labels = ["Support", "NEI", "Refute"]
         prediction = {k: prediction[k] for k in labels}
     # Convert dictionary to DataFrame with one column (Probability)
     df = pd.DataFrame.from_dict(prediction, orient="index", columns=["Probability"])
@@ -140,7 +130,7 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                 x="Class",
                 y="Probability",
                 color="Class",
-                color_map={"SUPPORT": "green", "NEI": "#888888", "REFUTE": "#FF8888"},
+                color_map={"Support": "green", "NEI": "#888888", "Refute": "#FF8888"},
                 inputs=prediction,
                 y_lim=([0, 1]),
                 visible=False,
@@ -278,6 +268,18 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
             d["label"]: d["score"]
             for d in pipe({"text": evidence, "text_pair": claim}, top_k=3)
         }
+        # Rename dictionary keys to use consistent labels across models
+        prediction = {
+            ("Support" if k in ["SUPPORT", "entailment"] else k): v
+            for k, v in prediction.items()
+        }
+        prediction = {
+            ("NEI" if k in ["NEI", "neutral"] else k): v for k, v in prediction.items()
+        }
+        prediction = {
+            ("Refute" if k in ["REFUTE", "contradiction"] else k): v
+            for k, v in prediction.items()
+        }
         # Return two instances of the prediction to send to different Gradio components
         return prediction, prediction
 
@@ -332,6 +334,8 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
         """
         Append input/outputs and user feedback to a JSON Lines file.
         """
+        # Get the first label (prediction with highest probability)
+        prediction = next(iter(label))
         with USER_FEEDBACK_PATH.open("a") as f:
             f.write(
                 json.dumps(
@@ -339,7 +343,7 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                         "claim": claim,
                         "evidence": evidence,
                         "model": model,
-                        "prediction": label,
+                        "prediction": prediction,
                         "user_label": user_label,
                         "datetime": datetime.now().isoformat(),
                     }
