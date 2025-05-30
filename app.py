@@ -54,15 +54,15 @@ def prediction_to_df(prediction=None):
     """
     if prediction is None or prediction == "":
         # Show an empty plot for app initialization or auto-reload
-        prediction = {"Support": 0, "NEI": 0, "Refute": 0}
+        prediction = {"SUPPORT": 0, "NEI": 0, "REFUTE": 0}
     elif "Model" in prediction:
         # Show full-height bars when the model is changed
-        prediction = {"Support": 1, "NEI": 1, "Refute": 1}
+        prediction = {"SUPPORT": 1, "NEI": 1, "REFUTE": 1}
     else:
         # Convert predictions text to dictionary
         prediction = eval(prediction)
         # Use custom order for labels (pipe() returns labels in descending order of softmax score)
-        labels = ["Support", "NEI", "Refute"]
+        labels = ["SUPPORT", "NEI", "REFUTE"]
         prediction = {k: prediction[k] for k in labels}
     # Convert dictionary to DataFrame with one column (Probability)
     df = pd.DataFrame.from_dict(prediction, orient="index", columns=["Probability"])
@@ -93,7 +93,7 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
         with gr.Column(scale=3):
             with gr.Row():
                 gr.Markdown("# AI4citations")
-                gr.Markdown("## *AI-powered scientific citation verification*")
+                gr.Markdown("## *AI-powered citation verification*")
             claim = gr.Textbox(
                 label="Claim",
                 info="aka hypothesis",
@@ -131,20 +131,23 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                 x="Class",
                 y="Probability",
                 color="Class",
-                color_map={"Support": "green", "NEI": "#888888", "Refute": "#FF8888"},
+                color_map={"SUPPORT": "green", "NEI": "#888888", "REFUTE": "#FF8888"},
                 inputs=prediction,
                 y_lim=([0, 1]),
                 visible=False,
             )
-            label = gr.Label(label="Results")
+            label = gr.Label(label="Prediction")
             with gr.Accordion("Feedback"):
                 gr.Markdown(
-                    "*Click on the correct label to help improve this app*<br>**NOTE:** The claim and evidence will also be saved"
+                    "*Provide the correct label to help improve this app*<br>**NOTE:** The claim and evidence will also be saved"
                 ),
                 with gr.Row():
                     flag_support = gr.Button("Support")
                     flag_nei = gr.Button("NEI")
                     flag_refute = gr.Button("Refute")
+                gr.Markdown(
+                    "Feedback is uploaded every 5 minutes to [AI4citations-feedback](https://huggingface.co/datasets/jedick/AI4citations-feedback)"
+                ),
             with gr.Accordion("Examples"):
                 gr.Markdown("*Examples are run when clicked*"),
                 with gr.Row():
@@ -197,12 +200,12 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                 with gr.Column(scale=2):
                     gr.Markdown(
                         """
-                    ### To make predictions:
+                    ### To make the prediction:
 
                     - Hit 'Enter' in the **Claim** text box OR
                     - Hit 'Shift-Enter' in the **Evidence** text box
 
-                    _Predictions are also made after clicking **Get Evidence**_
+                    _The prediction is also made after clicking **Get Evidence**_
                     """
                     )
 
@@ -220,7 +223,9 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                     value=MODEL_NAME,
                     label="Model",
                 )
-                radio = gr.Radio(["label", "barplot"], value="label", label="Results")
+                radio = gr.Radio(
+                    ["label", "barplot"], value="label", label="Prediction"
+                )
             with gr.Accordion("Sources", open=False, elem_classes=["center_content"]):
                 gr.Markdown(
                     """
@@ -247,8 +252,8 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                     """
                 #### *Other sources*
                 - <i class="fa-brands fa-github"></i> [xhluca/bm25s](https://github.com/xhluca/bm25s) (evidence retrieval)
+                - <img src="https://plos.org/wp-content/uploads/2020/01/logo-color-blue.svg" style="height: 1.4em; display: inline-block;"> [Medicine](https://doi.org/10.1371/journal.pmed.0030197), <i class="fa-brands fa-wikipedia-w"></i> [CRISPR](https://en.wikipedia.org/wiki/CRISPR) (evidence retrieval examples)
                 - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [nyu-mll/multi_nli](https://huggingface.co/datasets/nyu-mll/multi_nli/viewer/default/train?row=37&views%5B%5D=train) (MNLI example)
-                - <img src="https://plos.org/wp-content/uploads/2020/01/logo-color-blue.svg" style="height: 1.4em; display: inline-block;"> [Medicine](https://doi.org/10.1371/journal.pmed.0030197), <i class="fa-brands fa-wikipedia-w"></i> [CRISPR](https://en.wikipedia.org/wiki/CRISPR) (get evidence examples)
                 - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku) (theme)
                 """
                 )
@@ -272,14 +277,14 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
         }
         # Rename dictionary keys to use consistent labels across models
         prediction = {
-            ("Support" if k in ["SUPPORT", "entailment"] else k): v
+            ("SUPPORT" if k in ["SUPPORT", "entailment"] else k): v
             for k, v in prediction.items()
         }
         prediction = {
             ("NEI" if k in ["NEI", "neutral"] else k): v for k, v in prediction.items()
         }
         prediction = {
-            ("Refute" if k in ["REFUTE", "contradiction"] else k): v
+            ("REFUTE" if k in ["REFUTE", "contradiction"] else k): v
             for k, v in prediction.items()
         }
         # Return two instances of the prediction to send to different Gradio components
@@ -361,9 +366,9 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
         if is_running_in_hf_spaces():
             # Use a thread lock to avoid concurrent writes from different users.
             with scheduler.lock:
-                append_feedback(*args, user_label="Support")
+                append_feedback(*args, user_label="SUPPORT")
         else:
-            append_feedback(*args, user_label="Support")
+            append_feedback(*args, user_label="SUPPORT")
 
     def save_feedback_nei(*args) -> None:
         """
@@ -383,9 +388,9 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
         if is_running_in_hf_spaces():
             # Use a thread lock to avoid concurrent writes from different users.
             with scheduler.lock:
-                append_feedback(*args, user_label="Refute")
+                append_feedback(*args, user_label="REFUTE")
         else:
-            append_feedback(*args, user_label="Refute")
+            append_feedback(*args, user_label="REFUTE")
 
     # Event listeners
 
