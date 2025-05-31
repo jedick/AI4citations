@@ -193,7 +193,7 @@ class LLMEvidenceRetriever:
             return f"Error retrieving evidence: {str(e)}"
 
 
-def retrieve_from_pdf_llm(pdf_file: str, query: str, k: int = 5) -> str:
+def retrieve_with_llm_large(pdf_file: str, query: str, k: int = 5) -> str:
     """
     Wrapper function for LLM-based evidence retrieval
     Compatible with the existing BM25S interface
@@ -221,7 +221,7 @@ class LightweightLLMRetriever(LLMEvidenceRetriever):
         super().__init__(model_name="distilbert-base-cased-distilled-squad")
 
 
-def retrieve_from_pdf_llm_fast(pdf_file: str, query: str, k: int = 5) -> str:
+def retrieve_with_llm_fast(pdf_file: str, query: str, k: int = 5) -> str:
     """
     Fast LLM-based evidence retrieval using lightweight model
 

@@ -2,8 +2,9 @@ import pandas as pd
 import gradio as gr
 from transformers import pipeline
 import nltk
-from retrieval import retrieve_from_pdf
-from llm_retrieval import retrieve_from_pdf_llm, retrieve_from_pdf_llm_fast
+from retrieval_bm25s import retrieve_with_bm25s
+from retrieval_llm import retrieve_with_llm_large, retrieve_with_llm_fast
+from retrieval_gpt import retrieve_with_gpt
 import os
 import json
 from datetime import datetime
@@ -102,7 +103,7 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                         )
                         with gr.Row():
                             retrieval_method = gr.Radio(
-                                choices=["BM25S", "LLM (Large)", "LLM (Fast)"],
+                                choices=["BM25S", "LLM (Large)", "LLM (Fast)", "GPT"],
                                 value="BM25S",
                                 label="Retrieval Method",
                                 info="Choose between keyword-based (BM25S) or AI-based (LLM) evidence retrieval",
@@ -113,7 +114,6 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                             10,
                             value=5,
                             step=1,
-                            interactive=True,
                             label="Top k sentences",
                         )
                 with gr.Column(scale=3):
@@ -122,7 +122,11 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                         info="aka premise",
                         placeholder="Input evidence or use Get Evidence from PDF",
                     )
-            submit = gr.Button("3. Submit", visible=False)
+                    with gr.Row():
+                        prompt_tokens = gr.Number(label="Prompt tokens", visible=False)
+                        completion_tokens = gr.Number(
+                            label="Completion tokens", visible=False
+                        )
 
         with gr.Column(scale=2):
             # Keep the prediction textbox hidden
@@ -329,16 +333,28 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
         return pdf_file, claim
 
     @spaces.GPU()
-    def retrieve_evidence_with_method(pdf_file, claim, top_k, method):
+    def retrieve_with_llm(pdf_file, claim, top_k, method, llm):
+        """
+        Retrieve evidence using an LLM
+        """
+        if llm == "large":
+            return retrieve_with_llm_large(pdf_file, claim, k=top_k)
+        if llm == "fast":
+            return retrieve_with_llm_fast(pdf_file, claim, k=top_k)
+
+    def retrieve_evidence(pdf_file, claim, top_k, method):
         """
         Retrieve evidence using the selected method
         """
         if method == "BM25S":
-            return retrieve_from_pdf(pdf_file, claim, k=top_k)
+            # Append 0 for number of prompt and completion tokens
+            return retrieve_with_bm25s(pdf_file, claim, k=top_k), 0, 0
         elif method == "LLM (Large)":
-            return retrieve_from_pdf_llm(pdf_file, claim, k=top_k)
+            return retrieve_with_llm(pdf_file, claim, k=top_k, llm="large"), 0, 0
         elif method == "LLM (Fast)":
-            return retrieve_from_pdf_llm_fast(pdf_file, claim, k=top_k)
+            return retrieve_with_llm(pdf_file, claim, k=top_k, llm="fast"), 0, 0
+        elif method == "GPT":
+            return retrieve_with_gpt(pdf_file, claim)
         else:
             return f"Unknown retrieval method: {method}"
 
@@ -399,11 +415,29 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
         else:
             append_feedback(*args, user_label="REFUTE")
 
+    def number_visible(value):
+        """
+        Show numbers (token counts) if GPT is selcted for retrieval
+        """
+        if value == "GPT":
+            return gr.Number(visible=True)
+        else:
+            return gr.Number(visible=False)
+
+    def slider_visible(value):
+        """
+        Hide slider (top_k) if GPT is selcted for retrieval
+        """
+        if value == "GPT":
+            return gr.Slider(visible=False)
+        else:
+            return gr.Slider(visible=True)
+
     # Event listeners
 
-    # Click the submit button or press Enter to submit
+    # Press Enter or Shift-Enter to submit
     gr.on(
-        triggers=[claim.submit, evidence.submit, submit.click],
+        triggers=[claim.submit, evidence.submit],
         fn=query_model,
         inputs=[claim, evidence],
         outputs=[prediction, label],
@@ -412,9 +446,9 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
     # Get evidence from PDF and run the model
     gr.on(
         triggers=[get_evidence.click],
-        fn=retrieve_evidence_with_method,
+        fn=retrieve_evidence,
         inputs=[pdf_file, claim, top_k, retrieval_method],
-        outputs=evidence,
+        outputs=[evidence, prompt_tokens, completion_tokens],
     ).then(
         fn=query_model,
         inputs=[claim, evidence],
@@ -472,9 +506,9 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
         outputs=[pdf_file, claim],
         api_name=False,
     ).then(
-        fn=retrieve_evidence_with_method,
+        fn=retrieve_evidence,
         inputs=[pdf_file, claim, top_k, retrieval_method],
-        outputs=evidence,
+        outputs=[evidence, prompt_tokens, completion_tokens],
         api_name=False,
     ).then(
         fn=query_model,
@@ -515,17 +549,29 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
         fn=save_feedback_support,
         inputs=[claim, evidence, model, label],
         outputs=None,
+        api_name=False,
     )
     flag_nei.click(
         fn=save_feedback_nei,
         inputs=[claim, evidence, model, label],
         outputs=None,
+        api_name=False,
     )
     flag_refute.click(
         fn=save_feedback_refute,
         inputs=[claim, evidence, model, label],
         outputs=None,
+        api_name=False,
     )
+
+    # Change visibility of top-k slider and token counts if GPT is selected for retrieval
+    retrieval_method.change(
+        number_visible, retrieval_method, prompt_tokens, api_name=False
+    )
+    retrieval_method.change(
+        number_visible, retrieval_method, completion_tokens, api_name=False
+    )
+    retrieval_method.change(slider_visible, retrieval_method, top_k, api_name=False)
 
 
 if __name__ == "__main__":

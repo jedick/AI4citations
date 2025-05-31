@@ -5,7 +5,7 @@ from nltk.tokenize import sent_tokenize
 import bm25s
 
 
-def retrieve_from_pdf(pdf_file, query, k=10):
+def retrieve_with_bm25s(pdf_file, query, k=10):
 
     # Get PDF file as binary
     with open(pdf_file, mode="rb") as f:

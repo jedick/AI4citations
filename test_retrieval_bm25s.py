@@ -1,6 +1,6 @@
 import unittest
 import re
-from retrieval import *
+from retrieval_bm25s import *
 
 pdf_file = "examples/retrieval/CRISPR.pdf"
 
@@ -8,7 +8,7 @@ pdf_file = "examples/retrieval/CRISPR.pdf"
 class TestRetrieval(unittest.TestCase):
 
     def test_retrieve(self):
-        evidence = retrieve_from_pdf(
+        evidence = retrieve_with_bm25s(
             pdf_file, "CRISPR evolution has been described as Lamarckian", k=1
         )
         self.assertEqual(re.findall("Koonin", evidence), ["Koonin"])

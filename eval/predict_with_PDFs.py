@@ -11,16 +11,20 @@ client = Client("http://127.0.0.1:7860/")
 
 # Read SciFact test data
 df = pd.read_csv("scifact_test_data.csv")
+# Get number of examples
+n = df.shape[0]
 
 # Initialize lists for labels, evidences, and retrieval time
-labels = []
-evidences = []
-retrieval_time = []
+labels = [""] * n
+evidences = [""] * n
+retrieval_time = [0.0] * n
+prompt_tokens = [0] * n
+completion_tokens = [0] * n
 
 # Set top k sentences for retrieval
 top_k = 5
-# Set retrieval method: one of ['BM25S', 'LLM (Large)', 'LLM (Fast)']
-method = "BM25S"
+# Set retrieval method: one of ['BM25S', 'LLM (Large)', 'LLM (Fast)', 'GPT']
+method = "GPT"
 
 # Loop over examples
 for index, row in df.iterrows():
@@ -31,30 +35,26 @@ for index, row in df.iterrows():
 
     # Get PDF file for this claim
     pdf_file = f"/home/jedick/tmp/scifact-test-pdfs/{row['corpus_id']}.pdf"
-    if not os.path.exists(pdf_file):
-
-        # Append empty results if PDF doesn't exist
-        labels.append("")
-        evidences.append("")
-        retrieval_time.append("")
-
-    else:
+    # Only run if PDF file exists
+    if os.path.exists(pdf_file):
 
         # Get evidence from PDF
         try:
             # Measure retrieval time
             start_time = time.time()
 
-            evidence = client.predict(
+            evidence, _prompt_tokens, _completion_tokens = client.predict(
                 pdf_file=handle_file(pdf_file),
                 claim=row["claim"],
                 top_k=top_k,
                 method=method,
-                api_name="/retrieve_evidence_with_method",
+                api_name="/retrieve_evidence",
             )
-            evidences.append(evidence)
+            evidences[index] = evidence
             end_time = time.time()
-            retrieval_time.append(round(end_time - start_time, 2))
+            retrieval_time[index] = round(end_time - start_time, 2)
+            prompt_tokens[index] = _prompt_tokens
+            completion_tokens[index] = _completion_tokens
 
         except:
             # If an error occured, print the file name and error message
@@ -62,33 +62,37 @@ for index, row in df.iterrows():
             print(pdf_file)
             print(error_type)
             print(error_value)
-            # Use empty label and skip classification step
-            labels.append("")
-            evidences.append("")
-            retrieval_time.append("")
+            # Skip prediction step
             continue
 
-        # Predict the classifiction
+        # Make the prediction
         result = client.predict(
             claim=row["claim"], evidence=evidence, api_name="/query_model"
         )
         label = result[1]["label"]
-        labels.append(label)
+        labels[index] = label
 
-# Create file name with method (without spaces) and top-k value
-output_file = f"predict_with_PDFs_{method.replace(" ", "")}_k{top_k}.csv"
+# Create file name with method (without spaces) and top-k value (if not GPT)
+if method == "GPT":
+    output_file = f"predict_with_PDFs_{method}.csv"
+else:
+    output_file = f"predict_with_PDFs_{method.replace(" ", "")}_k{top_k}.csv"
 
-## For development and monitoring only:
-## (We can't upload the evidences retrieved from PDFs because they might contain copyrighted material)
-## Convert labels and evidences to DataFrame and save as CSV
-# results_df = pd.DataFrame(
-#    zip(labels, retrieval_time, evidences),
-#    columns=["label", "retrieval_time", "evidence"],
-# )
-# results_df.to_csv(output_file, index=False)
-
-# For uploading test results:
-results_df = pd.DataFrame(
-    zip(labels, retrieval_time), columns=["label", "retrieval_time"]
+# Convert results to DataFrame and save as CSV
+df = pd.DataFrame(
+    zip(labels, retrieval_time, prompt_tokens, completion_tokens, evidences),
+    columns=[
+        "label",
+        "retrieval_time",
+        "prompt_tokens",
+        "completion_tokens",
+        "evidence",
+    ],
 )
-results_df.to_csv(output_file, index=False)
+if not method == "GPT":
+    df.drop(columns=["prompt_tokens", "completion_tokens"], inplace=True)
+# For uploading test results, remove evidences retrieved from PDFs because they might contain copyrighted material
+# Comment this line for local usage only:
+# df.drop(columns = ["evidence"], inplace = True)
+# Save results as CSV
+df.to_csv(output_file, index=False)
