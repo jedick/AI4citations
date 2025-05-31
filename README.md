@@ -39,24 +39,24 @@ First, some definitions:
 - *Retrieved evidence* is sentences retrieved from the PDF of the cited paper
   - The claim was used as the query
   - Sentences were retrieved only from the cited PDF
-  - The number of retrieved sentences (top k) was set to 5 or 10
+  - The number of retrieved sentences (top k) was set to 5
 
 Retrieval methods implemented in the app:
 
-- **BM25**: Keyword-based retrieval using BM25-Sparse ranking algorithm ([BM25S](https://github.com/xhluca/bm25s))
-- **BERT**: AI-based retrieval using pretrained DeBERTa language model ([deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2))
+- **BM25S**: Keyword-based retrieval using BM25-Sparse ranking algorithm ([BM25S](https://github.com/xhluca/bm25s))
+- **DeBERTa**: AI-based retrieval using pretrained DeBERTa language model ([deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2))
 - **GPT**: AI-based retrieval using OpenAI's GPT ([gpt-4o-mini-2024-07-18](https://platform.openai.com/docs/pricing))
 
 ### Evaluation
 
 Predictions were made on the SciFact test set, with the following results for the claim verification task:
 
-| Retrieval method | Macro F1 (k=5) | Macro F1 (k=10) | Avg. retrieval time (s) |
-| - | - | - | - |
-| BM25 | 0.649 | 0.654 | 0.36 |
-| BERT | 0.610 | 0.591 | 7.00 |
-
-For comparison, Macro F1 for claim verification using gold evidence (abstracts) is 0.834.
+| Retrieval method | Macro F1 | Avg. retrieval time (s) |
+| - | - | - |
+| Gold evidence (no retrieval) | 0.834 | - |
+| BM25S | 0.649 | 0.36 |
+| DeBERTa | 0.610 | 7.00 |
+| GPT | 0.615 | 19.84 |
 
 ## Acknowledgments
 

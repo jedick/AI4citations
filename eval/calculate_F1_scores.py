@@ -7,12 +7,13 @@ y_true = true_df["label"]
 
 # List results files
 results_files = [
-    "predict_with_abstracts.csv",
-    "predict_with_PDFs_BM25S_k5.csv",
-    "predict_with_PDFs_BM25S_k10.csv",
+    "results/predict_with_abstracts.csv",
+    "results/predict_with_PDFs_BM25S_k5.csv",
+    "results/predict_with_PDFs_BM25S_k10.csv",
+    "results/predict_with_PDFs_GPT.csv",
 ]
 # List results descriptions
-results_descriptions = ["abstracts", "PDFs (k=5)", "PDFs (k=10)"]
+results_descriptions = ["abstracts", "PDFs (k=5)", "PDFs (k=10)", "PDFs (GPT)"]
 
 # Loop over files and descriptions
 for results_file, results_description in zip(results_files, results_descriptions):
