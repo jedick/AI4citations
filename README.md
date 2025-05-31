@@ -43,9 +43,9 @@ First, some definitions:
 
 Retrieval methods implemented in the app:
 
-- **BM25S**: Keyword-based retrieval using BM25 ranking algorithm
-- **LLM (Large)**: AI-based retrieval using large language model ([deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2))
-- **LLM (Fast)**: AI-based retrieval using lightweight language model ([distilbert-base-cased-distilled-squad](https://huggingface.co/distilbert/distilbert-base-cased-distilled-squad))
+- **BM25**: Keyword-based retrieval using BM25-Sparse ranking algorithm ([BM25S](https://github.com/xhluca/bm25s))
+- **BERT**: AI-based retrieval using pretrained DeBERTa language model ([deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2))
+- **GPT**: AI-based retrieval using OpenAI's GPT ([gpt-4o-mini-2024-07-18](https://platform.openai.com/docs/pricing))
 
 ### Evaluation
 
@@ -53,14 +53,12 @@ Predictions were made on the SciFact test set, with the following results for th
 
 | Retrieval method | Macro F1 (k=5) | Macro F1 (k=10) | Avg. retrieval time (s) |
 | - | - | - | - |
-| BM25S | 0.649 | 0.654 | 0.36 |
-| LLM(Fast) | 0.591 | 0.607 | 1.96 |
-| LLM(Large) | 0.610 | 0.591 | 7.00 |
+| BM25 | 0.649 | 0.654 | 0.36 |
+| BERT | 0.610 | 0.591 | 7.00 |
 
 For comparison, Macro F1 for claim verification using gold evidence (abstracts) is 0.834.
 
 ## Acknowledgments
 
 - App built with [Gradio](https://github.com/gradio-app/gradio)
-- [BM25S](https://github.com/xhluca/bm25s) for evidence retrieval 
-- LLM retrieval code writen with AI assistance (Claude Sonnet 4)
+- BERT retrieval code writen with AI assistance (Claude Sonnet 4)

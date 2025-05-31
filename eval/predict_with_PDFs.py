@@ -23,7 +23,7 @@ completion_tokens = [0] * n
 
 # Set top k sentences for retrieval
 top_k = 5
-# Set retrieval method: one of ['BM25S', 'LLM (Large)', 'LLM (Fast)', 'GPT']
+# Set retrieval method: one of ['BM25S', 'DeBERTa', 'GPT']
 method = "GPT"
 
 # Loop over examples
@@ -32,6 +32,9 @@ for index, row in df.iterrows():
     # Show progress
     if index % 10 == 0:
         print(index)
+
+    if index > 99:
+        continue
 
     # Get PDF file for this claim
     pdf_file = f"/home/jedick/tmp/scifact-test-pdfs/{row['corpus_id']}.pdf"

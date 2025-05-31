@@ -3,7 +3,7 @@ import gradio as gr
 from transformers import pipeline
 import nltk
 from retrieval_bm25s import retrieve_with_bm25s
-from retrieval_llm import retrieve_with_llm_large, retrieve_with_llm_fast
+from retrieval_bert import retrieve_with_deberta
 from retrieval_gpt import retrieve_with_gpt
 import os
 import json
@@ -50,28 +50,6 @@ if gr.NO_RELOAD:
         )
 
 
-def prediction_to_df(prediction=None):
-    """
-    Convert prediction text to DataFrame for barplot
-    """
-    if prediction is None or prediction == "":
-        # Show an empty plot for app initialization or auto-reload
-        prediction = {"SUPPORT": 0, "NEI": 0, "REFUTE": 0}
-    elif "Model" in prediction:
-        # Show full-height bars when the model is changed
-        prediction = {"SUPPORT": 1, "NEI": 1, "REFUTE": 1}
-    else:
-        # Convert predictions text to dictionary
-        prediction = eval(prediction)
-        # Use custom order for labels (pipe() returns labels in descending order of softmax score)
-        labels = ["SUPPORT", "NEI", "REFUTE"]
-        prediction = {k: prediction[k] for k in labels}
-    # Convert dictionary to DataFrame with one column (Probability)
-    df = pd.DataFrame.from_dict(prediction, orient="index", columns=["Probability"])
-    # Move the index to the Class column
-    return df.reset_index(names="Class")
-
-
 # Setup theme without background image
 my_theme = gr.Theme.from_hub("NoCrypt/miku")
 my_theme.set(body_background_fill="#FFFFFF", body_background_fill_dark="#000000")
@@ -103,10 +81,10 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                         )
                         with gr.Row():
                             retrieval_method = gr.Radio(
-                                choices=["BM25S", "LLM (Large)", "LLM (Fast)", "GPT"],
+                                choices=["BM25S", "DeBERTa", "GPT"],
                                 value="BM25S",
                                 label="Retrieval Method",
-                                info="Choose between keyword-based (BM25S) or AI-based (LLM) evidence retrieval",
+                                info="Keyword search (BM25S) or AI (DeBERTa, GPT)",
                             )
                         get_evidence = gr.Button(value="Get Evidence")
                         top_k = gr.Slider(
@@ -127,22 +105,44 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                         completion_tokens = gr.Number(
                             label="Completion tokens", visible=False
                         )
+                    gr.Markdown(
+                        """
+                    ### App Usage:
+
+                    - Input a **Claim**, then:
+                        - Upload a PDF and click **Get Evidence** OR
+                        - Input **Evidence** statements yourself
+                    - Make the **Prediction**:
+                        - Hit 'Enter' in the **Claim** text box OR
+                        - Hit 'Shift-Enter' in the **Evidence** text box OR
+                        - Click **Get Evidence**
+                    """
+                    )
+            with gr.Accordion("Sources", open=False):
+                gr.Markdown(
+                    """
+                #### *Capstone project*
+                - <i class="fa-brands fa-github"></i> [jedick/MLE-capstone-project](https://github.com/jedick/MLE-capstone-project) (project repo)
+                - <i class="fa-brands fa-github"></i> [jedick/AI4citations](https://github.com/jedick/AI4citations) (app repo)
+                #### *Text Classification*
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) (fine-tuned)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli) (base)
+                #### *Evidence Retrieval*
+                - <i class="fa-brands fa-github"></i> [xhluca/bm25s](https://github.com/xhluca/bm25s) (BM25S)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2) (DeBERTa)
+                - <img src="https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg" style="height: 1.2em; display: inline-block;"> [gpt-4o-mini-2024-07-18](https://platform.openai.com/docs/pricing) (GPT)
+                #### *Datasets for fine-tuning*
+                - <i class="fa-brands fa-github"></i> [allenai/SciFact](https://github.com/allenai/scifact) (SciFact)
+                - <i class="fa-brands fa-github"></i> [ScienceNLP-Lab/Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity) (CitInt)
+                #### *Other sources*
+                - <img src="https://plos.org/wp-content/uploads/2020/01/logo-color-blue.svg" style="height: 1.4em; display: inline-block;"> [Medicine](https://doi.org/10.1371/journal.pmed.0030197), <i class="fa-brands fa-wikipedia-w"></i> [CRISPR](https://en.wikipedia.org/wiki/CRISPR) (evidence retrieval examples)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [nyu-mll/multi_nli](https://huggingface.co/datasets/nyu-mll/multi_nli/viewer/default/train?row=37&views%5B%5D=train) (MNLI example)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku) (theme)
+                """
+                )
 
         with gr.Column(scale=2):
-            # Keep the prediction textbox hidden
-            with gr.Accordion(visible=False):
-                prediction = gr.Textbox(label="Prediction")
-            barplot = gr.BarPlot(
-                prediction_to_df,
-                x="Class",
-                y="Probability",
-                color="Class",
-                color_map={"SUPPORT": "green", "NEI": "#888888", "REFUTE": "#FF8888"},
-                inputs=prediction,
-                y_lim=([0, 1]),
-                visible=False,
-            )
-            label = gr.Label(label="Prediction")
+            prediction = gr.Label(label="Prediction")
             with gr.Accordion("Feedback"):
                 gr.Markdown(
                     "*Provide the correct label to help improve this app*<br>**NOTE:** The claim and evidence will also be saved"
@@ -189,71 +189,19 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                         "label"
                     ].tolist(),
                 )
-
-    with gr.Row():
-        with gr.Column(scale=3):
-            with gr.Row():
-                with gr.Column(scale=1):
-                    gr.Markdown(
-                        """
-                    ### Usage:
-
-                    - Input a **Claim**, then:
-                        - Upload a PDF, select retrieval method, and click **Get Evidence** OR
-                        - Input **Evidence** statements yourself
-                    """
-                    )
-                with gr.Column(scale=2):
-                    gr.Markdown(
-                        """
-                    ### To make the prediction:
-
-                    - Hit 'Enter' in the **Claim** text box OR
-                    - Hit 'Shift-Enter' in the **Evidence** text box
-
-                    _The prediction is also made after clicking **Get Evidence**_
-                    """
-                    )
-
-        with gr.Column(scale=2):
-            with gr.Accordion("Settings", open=False):
-                # Create dropdown menu to select the model
-                model = gr.Dropdown(
-                    choices=[
-                        # TODO: For bert-base-uncased, how can we set num_labels = 2 in HF pipeline?
-                        # (num_labels is available in AutoModelForSequenceClassification.from_pretrained)
-                        # "bert-base-uncased",
-                        "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
-                        "jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint",
-                    ],
-                    value=MODEL_NAME,
-                    label="Model",
-                )
-                radio = gr.Radio(
-                    ["label", "barplot"], value="label", label="Prediction"
-                )
-            with gr.Accordion("Sources", open=False):
-                gr.Markdown(
-                    """
-                #### *Capstone project*
-                - <i class="fa-brands fa-github"></i> [jedick/MLE-capstone-project](https://github.com/jedick/MLE-capstone-project) (project repo)
-                - <i class="fa-brands fa-github"></i> [jedick/AI4citations](https://github.com/jedick/AI4citations) (app repo)
-                #### *Claim Verification Models (text classification)*
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) (fine-tuned)
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli) (base)
-                #### *Evidence Retrieval Models (question answering)*
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2) (Large)
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [distilbert-base-cased-distilled-squad](https://huggingface.co/distilbert/distilbert-base-cased-distilled-squad) (Fast)
-                #### *Datasets for fine-tuning*
-                - <i class="fa-brands fa-github"></i> [allenai/SciFact](https://github.com/allenai/scifact) (SciFact)
-                - <i class="fa-brands fa-github"></i> [ScienceNLP-Lab/Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity) (CitInt)
-                #### *Other sources*
-                - <i class="fa-brands fa-github"></i> [xhluca/bm25s](https://github.com/xhluca/bm25s) (evidence retrieval)
-                - <img src="https://plos.org/wp-content/uploads/2020/01/logo-color-blue.svg" style="height: 1.4em; display: inline-block;"> [Medicine](https://doi.org/10.1371/journal.pmed.0030197), <i class="fa-brands fa-wikipedia-w"></i> [CRISPR](https://en.wikipedia.org/wiki/CRISPR) (evidence retrieval examples)
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [nyu-mll/multi_nli](https://huggingface.co/datasets/nyu-mll/multi_nli/viewer/default/train?row=37&views%5B%5D=train) (MNLI example)
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku) (theme)
-                """
-                )
+            # Create dropdown menu to select the model
+            model = gr.Dropdown(
+                choices=[
+                    # TODO: For bert-base-uncased, how can we set num_labels = 2 in HF pipeline?
+                    # (num_labels is available in AutoModelForSequenceClassification.from_pretrained)
+                    # "bert-base-uncased",
+                    "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+                    "jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint",
+                ],
+                value=MODEL_NAME,
+                label="Model",
+                info="Text classification model used for claim verification",
+            )
 
     # Functions
 
@@ -284,8 +232,7 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
             ("REFUTE" if k in ["REFUTE", "contradiction"] else k): v
             for k, v in prediction.items()
         }
-        # Return two instances of the prediction to send to different Gradio components
-        return prediction, prediction
+        return prediction
 
     def select_model(model_name):
         """
@@ -297,15 +244,6 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
             "text-classification",
             model=MODEL_NAME,
         )
-
-    def change_visualization(choice):
-        if choice == "barplot":
-            barplot = gr.update(visible=True)
-            label = gr.update(visible=False)
-        elif choice == "label":
-            barplot = gr.update(visible=False)
-            label = gr.update(visible=True)
-        return barplot, label
 
     # From gradio/client/python/gradio_client/utils.py
     def is_http_url_like(possible_url) -> bool:
@@ -333,14 +271,11 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
         return pdf_file, claim
 
     @spaces.GPU()
-    def retrieve_with_llm(pdf_file, claim, top_k, method, llm):
+    def _retrieve_with_deberta(pdf_file, claim, top_k):
         """
-        Retrieve evidence using an LLM
+        Retrieve evidence using DeBERTa
         """
-        if llm == "large":
-            return retrieve_with_llm_large(pdf_file, claim, k=top_k)
-        if llm == "fast":
-            return retrieve_with_llm_fast(pdf_file, claim, k=top_k)
+        return retrieve_with_deberta(pdf_file, claim, top_k)
 
     def retrieve_evidence(pdf_file, claim, top_k, method):
         """
@@ -348,24 +283,22 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
         """
         if method == "BM25S":
             # Append 0 for number of prompt and completion tokens
-            return retrieve_with_bm25s(pdf_file, claim, k=top_k), 0, 0
-        elif method == "LLM (Large)":
-            return retrieve_with_llm(pdf_file, claim, k=top_k, llm="large"), 0, 0
-        elif method == "LLM (Fast)":
-            return retrieve_with_llm(pdf_file, claim, k=top_k, llm="fast"), 0, 0
+            return retrieve_with_bm25s(pdf_file, claim, top_k), 0, 0
+        elif method == "DeBERTa":
+            return _retrieve_with_deberta(pdf_file, claim, top_k), 0, 0
         elif method == "GPT":
             return retrieve_with_gpt(pdf_file, claim)
         else:
             return f"Unknown retrieval method: {method}"
 
     def append_feedback(
-        claim: str, evidence: str, model: str, label: str, user_label: str
+        claim: str, evidence: str, model: str, prediction: str, user_label: str
     ) -> None:
         """
         Append input/outputs and user feedback to a JSON Lines file.
         """
         # Get the first label (prediction with highest probability)
-        prediction = next(iter(label))
+        _prediction = next(iter(prediction))
         with USER_FEEDBACK_PATH.open("a") as f:
             f.write(
                 json.dumps(
@@ -373,7 +306,7 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                         "claim": claim,
                         "evidence": evidence,
                         "model": model,
-                        "prediction": prediction,
+                        "prediction": _prediction,
                         "user_label": user_label,
                         "datetime": datetime.now().isoformat(),
                     }
@@ -440,7 +373,7 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
         triggers=[claim.submit, evidence.submit],
         fn=query_model,
         inputs=[claim, evidence],
-        outputs=[prediction, label],
+        outputs=prediction,
     )
 
     # Get evidence from PDF and run the model
@@ -452,7 +385,7 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
     ).then(
         fn=query_model,
         inputs=[claim, evidence],
-        outputs=[prediction, label],
+        outputs=prediction,
         api_name=False,
     )
 
@@ -466,7 +399,7 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
     ).then(
         fn=query_model,
         inputs=[claim, evidence],
-        outputs=[prediction, label],
+        outputs=prediction,
         api_name=False,
     )
 
@@ -480,7 +413,7 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
     ).then(
         fn=query_model,
         inputs=[claim, evidence],
-        outputs=[prediction, label],
+        outputs=prediction,
         api_name=False,
     )
 
@@ -494,7 +427,7 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
     ).then(
         fn=query_model,
         inputs=[claim, evidence],
-        outputs=[prediction, label],
+        outputs=prediction,
         api_name=False,
     )
 
@@ -513,53 +446,37 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
     ).then(
         fn=query_model,
         inputs=[claim, evidence],
-        outputs=[prediction, label],
+        outputs=prediction,
         api_name=False,
     )
 
-    # Change visualization
-    radio.change(
-        fn=change_visualization,
-        inputs=radio,
-        outputs=[barplot, label],
-        api_name=False,
-    )
-
-    # Clear the previous predictions when the model is changed
-    gr.on(
-        triggers=[model.select],
-        fn=lambda: "Model changed! Waiting for updated predictions...",
-        outputs=[prediction],
-        api_name=False,
-    )
-
-    # Change the model the update the predictions
+    # Change the model then update the predictions
     model.change(
         fn=select_model,
         inputs=model,
     ).then(
         fn=query_model,
         inputs=[claim, evidence],
-        outputs=[prediction, label],
+        outputs=prediction,
         api_name=False,
     )
 
     # Log user feedback when button is clicked
     flag_support.click(
         fn=save_feedback_support,
-        inputs=[claim, evidence, model, label],
+        inputs=[claim, evidence, model, prediction],
         outputs=None,
         api_name=False,
     )
     flag_nei.click(
         fn=save_feedback_nei,
-        inputs=[claim, evidence, model, label],
+        inputs=[claim, evidence, model, prediction],
         outputs=None,
         api_name=False,
     )
     flag_refute.click(
         fn=save_feedback_refute,
-        inputs=[claim, evidence, model, label],
+        inputs=[claim, evidence, model, prediction],
         outputs=None,
         api_name=False,
     )

@@ -8,5 +8,6 @@ nltk
 bm25s
 huggingface_hub
 spaces
+openai
 coverage
 codecov

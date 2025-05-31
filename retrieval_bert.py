@@ -12,14 +12,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class LLMEvidenceRetriever:
+class BERTRetriever:
     """
-    LLM-based evidence retrieval using extractive question answering
+    BERT-based evidence retrieval using extractive question answering
     """
 
     def __init__(self, model_name: str = "deepset/deberta-v3-large-squad2"):
         """
-        Initialize the LLM evidence retriever
+        Initialize the BERT evidence retriever
 
         Args:
             model_name: HuggingFace model for question answering
@@ -34,7 +34,7 @@ class LLMEvidenceRetriever:
         )
         # Maximum context length for the model
         self.max_length = self.tokenizer.model_max_length
-        logger.info(f"Initialized LLM retriever with model: {model_name}")
+        logger.info(f"Initialized BERT retriever with model: {model_name}")
 
     def _extract_and_clean_text(self, pdf_file: str) -> str:
         """
@@ -124,9 +124,9 @@ class LLMEvidenceRetriever:
         else:
             return f"What evidence supports the claim that {claim.lower()}?"
 
-    def retrieve_evidence(self, pdf_file: str, claim: str, k: int = 5) -> str:
+    def retrieve_evidence(self, pdf_file: str, claim: str, top_k: int = 5) -> str:
         """
-        Retrieve evidence from PDF using LLM-based question answering
+        Retrieve evidence from PDF using BERT-based question answering
 
         Args:
             pdf_file: Path to PDF file
@@ -177,7 +177,7 @@ class LLMEvidenceRetriever:
 
             # Sort by confidence score and take top k
             answers.sort(key=lambda x: x["score"], reverse=True)
-            top_answers = answers[:k]
+            top_answers = answers[:top_k]
 
             # Combine evidence passages
             if top_answers:
@@ -189,30 +189,30 @@ class LLMEvidenceRetriever:
                 return "No relevant evidence found in the document."
 
         except Exception as e:
-            logger.error(f"Error in LLM evidence retrieval: {str(e)}")
+            logger.error(f"Error in BERT evidence retrieval: {str(e)}")
             return f"Error retrieving evidence: {str(e)}"
 
 
-def retrieve_with_llm_large(pdf_file: str, query: str, k: int = 5) -> str:
+def retrieve_with_deberta(pdf_file: str, claim: str, top_k: int = 5) -> str:
     """
-    Wrapper function for LLM-based evidence retrieval
+    Wrapper function for DeBERTa-based evidence retrieval
     Compatible with the existing BM25S interface
 
     Args:
         pdf_file: Path to PDF file
-        query: Query/claim to find evidence for
-        k: Number of evidence passages to retrieve
+        claim: Claim to find evidence for
+        top_k: Number of evidence passages to retrieve
 
     Returns:
         Retrieved evidence text
     """
     # Initialize retriever (in production, this should be cached)
-    retriever = LLMEvidenceRetriever()
-    return retriever.retrieve_evidence(pdf_file, query, k)
+    retriever = BERTRetriever()
+    return retriever.retrieve_evidence(pdf_file, claim, top_k)
 
 
 # Alternative lightweight model for faster inference
-class LightweightLLMRetriever(LLMEvidenceRetriever):
+class DistilBERTRetriever(BERTRetriever):
     """
     Lightweight version using smaller, faster models
     """
@@ -221,17 +221,17 @@ class LightweightLLMRetriever(LLMEvidenceRetriever):
         super().__init__(model_name="distilbert-base-cased-distilled-squad")
 
 
-def retrieve_with_llm_fast(pdf_file: str, query: str, k: int = 5) -> str:
+def retrieve_with_distilbert(pdf_file: str, claim: str, top_k: int = 5) -> str:
     """
-    Fast LLM-based evidence retrieval using lightweight model
+    Fast DistilBERT-based evidence retrieval
 
     Args:
         pdf_file: Path to PDF file
-        query: Query/claim to find evidence for
-        k: Number of evidence passages to retrieve
+        claim: Claim to find evidence for
+        top_k: Number of evidence passages to retrieve
 
     Returns:
         Retrieved evidence text
     """
-    retriever = LightweightLLMRetriever()
-    return retriever.retrieve_evidence(pdf_file, query, k)
+    retriever = DistilBERTRetriever()
+    return retriever.retrieve_evidence(pdf_file, claim, top_k)

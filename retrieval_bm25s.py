@@ -5,7 +5,7 @@ from nltk.tokenize import sent_tokenize
 import bm25s
 
 
-def retrieve_with_bm25s(pdf_file, query, k=10):
+def retrieve_with_bm25s(pdf_file, claim, top_k=10):
 
     # Get PDF file as binary
     with open(pdf_file, mode="rb") as f:
@@ -35,12 +35,12 @@ def retrieve_with_bm25s(pdf_file, query, k=10):
     # Initialize the BM25 model
     retriever = bm25s.BM25()
     retriever.index(corpus_tokens, show_progress=False)
-    # Tokenize the query
-    query_tokens = bm25s.tokenize(query)
+    # Tokenize the claim
+    query_tokens = bm25s.tokenize(claim)
 
-    # Get top-k results
+    # Get top k results
     # Use int(k) in case we get str value (as in retrieval example)
-    results, scores = retriever.retrieve(query_tokens, corpus=corpus, k=int(k))
+    results, scores = retriever.retrieve(query_tokens, corpus=corpus, k=int(top_k))
     ## Print results
     # for i in range(results.shape[1]):
     #    doc, score = results[0, i], scores[0, i]
