@@ -47,15 +47,15 @@ Retrieval methods implemented in the app:
 - **LLM (Large)**: AI-based retrieval using large language model ([deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2))
 - **LLM (Fast)**: AI-based retrieval using lightweight language model ([distilbert-base-cased-distilled-squad](https://huggingface.co/distilbert/distilbert-base-cased-distilled-squad))
 
-### Retrieval evaluation
+### Evaluation
 
-Predictions were made on the SciFact test set, with the following resuts:
+Predictions were made on the SciFact test set, with the following results for the claim verification task:
 
 | Retrieval method | Macro F1 (k=5) | Macro F1 (k=10) | Avg. retrieval time (s) |
 | - | - | - | - |
 | BM25S | 0.649 | 0.654 | 0.36 |
 | LLM(Fast) | 0.591 | 0.607 | 1.96 |
-| LLM(Large) | 0.61 | 0.591 | 7.00 |
+| LLM(Large) | 0.610 | 0.591 | 7.00 |
 
 For comparison, Macro F1 for claim verification using gold evidence (abstracts) is 0.834.
 

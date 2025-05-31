@@ -75,19 +75,11 @@ def prediction_to_df(prediction=None):
 my_theme = gr.Theme.from_hub("NoCrypt/miku")
 my_theme.set(body_background_fill="#FFFFFF", body_background_fill_dark="#000000")
 
-# Custom CSS to center content
-custom_css = """
-.center-content {
-    text-align: center;
-    display:block;
-}
-"""
-
 # Define the HTML for Font Awesome
 font_awesome_html = '<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">'
 
 # Gradio interface setup
-with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
+with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
 
     # Layout
     with gr.Row():
@@ -236,7 +228,7 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                 radio = gr.Radio(
                     ["label", "barplot"], value="label", label="Prediction"
                 )
-            with gr.Accordion("Sources", open=False, elem_classes=["center_content"]):
+            with gr.Accordion("Sources", open=False):
                 gr.Markdown(
                     """
                 #### *Capstone project*
