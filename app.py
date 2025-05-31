@@ -3,6 +3,7 @@ import gradio as gr
 from transformers import pipeline
 import nltk
 from retrieval import retrieve_from_pdf
+from llm_retrieval import retrieve_from_pdf_llm, retrieve_from_pdf_llm_fast
 import os
 import json
 from datetime import datetime
@@ -93,7 +94,9 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
         with gr.Column(scale=3):
             with gr.Row():
                 gr.Markdown("# AI4citations")
-                gr.Markdown("## *AI-powered citation verification*")
+                gr.Markdown(
+                    "## *AI-powered citation verification* ([more info](https://github.com/jedick/AI4citations))"
+                )
             claim = gr.Textbox(
                 label="Claim",
                 info="aka hypothesis",
@@ -105,6 +108,13 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                         pdf_file = gr.File(
                             label="Upload PDF", type="filepath", height=120
                         )
+                        with gr.Row():
+                            retrieval_method = gr.Radio(
+                                choices=["BM25S", "LLM (Large)", "LLM (Fast)"],
+                                value="BM25S",
+                                label="Retrieval Method",
+                                info="Choose between keyword-based (BM25S) or AI-based (LLM) evidence retrieval",
+                            )
                         get_evidence = gr.Button(value="Get Evidence")
                         top_k = gr.Slider(
                             1,
@@ -193,7 +203,7 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                     ### Usage:
 
                     - Input a **Claim**, then:
-                        - Upload a PDF and click **Get Evidence** OR
+                        - Upload a PDF, select retrieval method, and click **Get Evidence** OR
                         - Input **Evidence** statements yourself
                     """
                     )
@@ -232,24 +242,15 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
                 #### *Capstone project*
                 - <i class="fa-brands fa-github"></i> [jedick/MLE-capstone-project](https://github.com/jedick/MLE-capstone-project) (project repo)
                 - <i class="fa-brands fa-github"></i> [jedick/AI4citations](https://github.com/jedick/AI4citations) (app repo)
-                """
-                )
-                gr.Markdown(
-                    """
-                #### *Models*
+                #### *Claim Verification Models (text classification)*
                 - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) (fine-tuned)
                 - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli) (base)
-                """
-                )
-                gr.Markdown(
-                    """
+                #### *Evidence Retrieval Models (question answering)*
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2) (Large)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [distilbert-base-cased-distilled-squad](https://huggingface.co/distilbert/distilbert-base-cased-distilled-squad) (Fast)
                 #### *Datasets for fine-tuning*
                 - <i class="fa-brands fa-github"></i> [allenai/SciFact](https://github.com/allenai/scifact) (SciFact)
                 - <i class="fa-brands fa-github"></i> [ScienceNLP-Lab/Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity) (CitInt)
-                """
-                )
-                gr.Markdown(
-                    """
                 #### *Other sources*
                 - <i class="fa-brands fa-github"></i> [xhluca/bm25s](https://github.com/xhluca/bm25s) (evidence retrieval)
                 - <img src="https://plos.org/wp-content/uploads/2020/01/logo-color-blue.svg" style="height: 1.4em; display: inline-block;"> [Medicine](https://doi.org/10.1371/journal.pmed.0030197), <i class="fa-brands fa-wikipedia-w"></i> [CRISPR](https://en.wikipedia.org/wiki/CRISPR) (evidence retrieval examples)
@@ -335,6 +336,20 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
             pdf_file = f"examples/retrieval/{pdf_file}"
         return pdf_file, claim
 
+    @spaces.GPU()
+    def retrieve_evidence_with_method(pdf_file, claim, top_k, method):
+        """
+        Retrieve evidence using the selected method
+        """
+        if method == "BM25S":
+            return retrieve_from_pdf(pdf_file, claim, k=top_k)
+        elif method == "LLM (Large)":
+            return retrieve_from_pdf_llm(pdf_file, claim, k=top_k)
+        elif method == "LLM (Fast)":
+            return retrieve_from_pdf_llm_fast(pdf_file, claim, k=top_k)
+        else:
+            return f"Unknown retrieval method: {method}"
+
     def append_feedback(
         claim: str, evidence: str, model: str, label: str, user_label: str
     ) -> None:
@@ -405,8 +420,8 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
     # Get evidence from PDF and run the model
     gr.on(
         triggers=[get_evidence.click],
-        fn=retrieve_from_pdf,
-        inputs=[pdf_file, claim, top_k],
+        fn=retrieve_evidence_with_method,
+        inputs=[pdf_file, claim, top_k, retrieval_method],
         outputs=evidence,
     ).then(
         fn=query_model,
@@ -465,8 +480,8 @@ with gr.Blocks(theme=my_theme, css=custom_css, head=font_awesome_html) as demo:
         outputs=[pdf_file, claim],
         api_name=False,
     ).then(
-        fn=retrieve_from_pdf,
-        inputs=[pdf_file, claim, top_k],
+        fn=retrieve_evidence_with_method,
+        inputs=[pdf_file, claim, top_k, retrieval_method],
         outputs=evidence,
         api_name=False,
     ).then(

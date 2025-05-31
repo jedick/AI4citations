@@ -4,18 +4,22 @@
 
 # AI-Powered Citation Verification
 
-A web app for scientific citation verification.
-This app was developed as part of an [ML engineering capstone project](https://github.com/jedick/MLE-capstone-project).
+The integrity of scientific literature depends on citations that are supported by the referenced source material.
+These citations are sometimes inaccurate, contributing to unverified claims.
+Automatic detection of citation accuracy can help writers and editors improve the overall quality of scientific literature.
+
+AI4ciations is an easy-to-use app for citation verification that leverages a claim verification model trained on domain-specific datasets.
+For details on the data preprocessing, model fine-tuning, and baseline comparisons, see the repo for this [ML engineering capstone project](https://github.com/jedick/MLE-capstone-project).
 
 Features:
 
-- **Claim verification**: Predict a label from a pair of claim and evidence statements
+- **Claim verification**: Input a pair of claim and evidence statements and predict a label
   - Labels are Support, Refute, or Not Enough Information (NEI)
-- **Evidence retrieval**: Input a claim to get evidence from a PDF
 - Model selection: Choose from a fine-tuned model (default) or the pretrained base model
   - The [default model](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) was fine-tuned on two datasets, [SciFact](https://github.com/allenai/scifact) and [Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity/)
   - The [base model](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli) is DeBERTa pre-trained on multiple natural language inference (NLI) datasets
   - See this [blog post](https://jedick.github.io/blog/experimenting-with-transformer-models-for-citation-verification/) for more information on fine-tuning
+- **Evidence retrieval**: Get evidence from a PDF related to the given claim (see details below)
 
 ## Running the app
 
@@ -27,9 +31,9 @@ Screenshot of app with [example text](https://huggingface.co/datasets/nyu-mll/mu
 
 ![Screenshot of AI4citations app](./images/AI4citations_screenshot.png)
 
-## Evaluation
+## Retrieval methods
 
-Predictions were made on the SciFact test set.
+First, some definitions:
 
 - *Gold evidence* is the abstract from the cited paper used by human annotators to label each claim
 - *Retrieved evidence* is sentences retrieved from the PDF of the cited paper
@@ -37,13 +41,26 @@ Predictions were made on the SciFact test set.
   - Sentences were retrieved only from the cited PDF
   - The number of retrieved sentences (top k) was set to 5 or 10
 
-Results:
+Retrieval methods implemented in the app:
 
-- Macro F1 with gold evidence: 0.834
-- Macro F1 with retrieved evidence (k=5): 0.649
-- Macro F1 with retrieved evidence (k=10): 0.654
+- **BM25S**: Keyword-based retrieval using BM25 ranking algorithm
+- **LLM (Large)**: AI-based retrieval using large language model ([deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2))
+- **LLM (Fast)**: AI-based retrieval using lightweight language model ([distilbert-base-cased-distilled-squad](https://huggingface.co/distilbert/distilbert-base-cased-distilled-squad))
+
+### Retrieval evaluation
+
+Predictions were made on the SciFact test set, with the following resuts:
+
+| Retrieval method | Macro F1 (k=5) | Macro F1 (k=10) | Avg. retrieval time (s) |
+| - | - | - | - |
+| BM25S | 0.649 | 0.654 | 0.36 |
+| LLM(Fast) | 0.591 | 0.607 | 1.96 |
+| LLM(Large) | 0.61 | 0.591 | 7.00 |
+
+For comparison, Macro F1 for claim verification using gold evidence (abstracts) is 0.834.
 
 ## Acknowledgments
 
 - App built with [Gradio](https://github.com/gradio-app/gradio)
 - [BM25S](https://github.com/xhluca/bm25s) for evidence retrieval 
+- LLM retrieval code writen with AI assistance (Claude Sonnet 4)
