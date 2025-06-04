@@ -5,7 +5,10 @@ jobs:
     runs-on: ubuntu-latest
     # Add container and install pip to allow connection to local server for app integration test
     # https://stackoverflow.com/questions/74332455/connection-refused-for-local-server-in-github-actions-workflow
-    container: ubuntu
+    container: 
+      image: ubuntu
+      ports:
+        - 7860
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
@@ -21,7 +24,7 @@ jobs:
         run: |
           apt-get install -y python3-venv
           python -m venv .venv
-      # Every run has a default PATH, so activate virtual environment in every run
+      # Every run has a default PATH, so sctivate virtual environment in every run
       # https://stackoverflow.com/questions/74668349/how-to-activate-a-virtualenv-in-a-github-action
       - name: Install dependencies
         run: |
