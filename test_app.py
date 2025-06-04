@@ -5,6 +5,9 @@ from gradio_client import Client
 
 
 class TestApp(unittest.TestCase):
+    """
+    Integration tests for AI4citations app
+    """
 
     def setUp(self):
 
