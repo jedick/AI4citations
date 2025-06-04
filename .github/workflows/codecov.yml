@@ -1,14 +1,15 @@
 name: Workflow for Codecov
 on: [push, pull_request]
 jobs:
-  run:
+  codecov-run:
     runs-on: ubuntu-latest
-    # Add container and install pip to allow connection to local server for app integration test
+    # Add container to allow connection to local server for app integration test
     # https://stackoverflow.com/questions/74332455/connection-refused-for-local-server-in-github-actions-workflow
     container: 
       image: ubuntu
       ports:
-        - 7860
+        # Opens tcp port 7860 on the host and container
+        - 7860:7860
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
