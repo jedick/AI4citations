@@ -14,7 +14,7 @@ class TestApp(unittest.TestCase):
         # Start the Gradio app in a separate process
         self.process = subprocess.Popen(["python", "app.py"])
         # Wait for the server to start
-        time.sleep(20)
+        time.sleep(60)
 
     def tearDown(self):
         # Terminate the Gradio process
