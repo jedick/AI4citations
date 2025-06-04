@@ -2,63 +2,177 @@
 [![Codecov test coverage](https://codecov.io/gh/jedick/AI4citations/graph/badge.svg)](https://app.codecov.io/gh/jedick/AI4citations)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-# AI-Powered Citation Verification
+# AI4citations: AI-Powered Citation Verification
 
-The integrity of scientific literature depends on citations that are supported by the referenced source material.
-These citations are sometimes inaccurate, contributing to unverified claims.
-Automatic detection of citation accuracy can help writers and editors improve the overall quality of scientific literature.
+The integrity of scientific literature depends on citations that are supported by the referenced source material. These citations are sometimes inaccurate, contributing to unverified claims. AI4citations provides an easy-to-use solution for automated citation verification that leverages state-of-the-art machine learning models trained on domain-specific datasets.
 
-AI4ciations is an easy-to-use app for citation verification that leverages a claim verification model trained on domain-specific datasets.
-For details on the data preprocessing, model fine-tuning, and baseline comparisons, see the repo for this [ML engineering capstone project](https://github.com/jedick/MLE-capstone-project).
+## 🎯 Use Cases
 
-Features:
+- **Academic Researchers**: Verify citations in literature reviews and research papers
+- **Journal Editors**: Automated fact-checking during peer review process  
+- **Students**: Learn proper citation practices and evidence evaluation
+- **Science Communicators**: Verify claims in popular science writing
+- **Fact-checkers**: Quick verification of scientific claims in media
 
-- **Claim verification**: Input a pair of claim and evidence statements and predict a label
-  - Labels are Support, Refute, or Not Enough Information (NEI)
-- Model selection: Choose from a fine-tuned model (default) or the pretrained base model
-  - The [default model](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) was fine-tuned on two datasets, [SciFact](https://github.com/allenai/scifact) and [Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity/)
-  - The [base model](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli) is DeBERTa pre-trained on multiple natural language inference (NLI) datasets
-  - See this [blog post](https://jedick.github.io/blog/experimenting-with-transformer-models-for-citation-verification/) for more information on fine-tuning
-- **Evidence retrieval**: Get evidence from a PDF related to the given claim (see details below)
+## 🚀 Quick Start
 
-## Running the app
+### Try the App Online
+**No installation required!** Use AI4citations directly in your browser:
 
-- Install the requirements with the `pip install -r requirements.txt`
-- Run `gradio app.py` to launch the app
-- Browse to the generated URL (e.g. `http://127.0.0.1:7860`)
+👉 **[Launch AI4citations on Hugging Face Spaces](https://huggingface.co/spaces/jedick/AI4citations)**
 
-Screenshot of app with [example text](https://huggingface.co/datasets/nyu-mll/multi_nli/viewer/default/train?row=37&views%5B%5D=train):
+### Local Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/jedick/AI4citations.git
+   cd AI4citations
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Set up OpenAI API key** (optional, for GPT retrieval)
+   ```bash
+   export OPENAI_API_KEY="your-api-key-here"
+   ```
+
+4. **Launch the application**
+   ```bash
+   gradio app.py
+   ```
+
+5. **Access the app**
+   - Open your browser and navigate to the displayed URL (typically `http://127.0.0.1:7860`)
+   - Upload a PDF or input text directly to start verifying citations
+
+## 📖 How to Use
+
+1. **Input a claim** (hypothesis) you want to verify
+2. **Provide evidence** in one of two ways:
+   - Upload a PDF and use automatic evidence retrieval
+   - Manually input evidence text
+3. **Get predictions** with confidence scores for:
+   - **Support**: Evidence supports the claim
+   - **Refute**: Evidence contradicts the claim  
+   - **NEI** (Not Enough Information): Evidence is insufficient
+4. **Provide feedback** to help improve the model
 
 ![Screenshot of AI4citations app](./images/AI4citations_screenshot.png)
 
-## Retrieval methods
+## 🔗 Related Projects
 
-First, some definitions:
+This app is part of a comprehensive ML engineering ecosystem:
 
-- *Gold evidence* is the abstract from the cited paper used by human annotators to label each claim
-- *Retrieved evidence* is sentences retrieved from the PDF of the cited paper
-  - The claim was used as the query
-  - Sentences were retrieved only from the cited PDF
-  - The number of retrieved sentences (top k) was set to 5
+- **🏗️ [MLE Capstone Project](https://github.com/jedick/MLE-capstone-project)** - Complete ML pipeline with baselines, evaluation, and deployment
+- **📦 [pyvers Package](https://github.com/jedick/pyvers)** - Python package for training claim verification models
+- **🤖 [Fine-tuned Model](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint)** - Production model on Hugging Face
 
-Retrieval methods implemented in the app:
+## ⚡ Key Features
 
-- **BM25S**: Keyword-based retrieval using BM25-Sparse ranking algorithm ([BM25S](https://github.com/xhluca/bm25s))
-- **DeBERTa**: AI-based retrieval using pretrained DeBERTa language model ([deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2))
-- **GPT**: AI-based retrieval using OpenAI's GPT ([gpt-4o-mini-2024-07-18](https://platform.openai.com/docs/pricing))
+### Claim Verification Models
+- **Fine-tuned DeBERTa** (default): Trained on SciFact and Citation-Integrity datasets for scientific claim verification
+- **Base DeBERTa**: Pre-trained on multiple natural language inference (NLI) datasets
+- **Interactive model switching**: Compare results between different models
+- **Detailed predictions**: Get instant results with confidence scores
 
-### Evaluation
+### Evidence Retrieval Methods
+Choose from three complementary approaches to extract relevant evidence from PDFs:
 
-Predictions were made on the SciFact test set, with the following results for the claim verification task:
+- 🔍 **BM25S** (Traditional keyword matching with BM25 ranking)
+- 🧠 **DeBERTa** (AI-based question-answering with context extraction)
+- 🤖 **OpenAI GPT** (Advanced AI: Large language model with document understanding)
 
-| Retrieval method | Macro F1 | Avg. retrieval time (s) |
-| - | - | - |
-| Gold evidence (no retrieval) | 0.834 | - |
-| BM25S | 0.649 | 0.36 |
-| DeBERTa | 0.610 | 7.00 |
-| GPT | 0.615 | 19.84 |
+For BM25S and DeBERTa, you can adjust the number of evidence sentences retrieved (top-k sentences).
 
-## Acknowledgments
+### User Experience Features
+- **Interactive examples**: Pre-loaded examples for each prediction class
+- **PDF upload**: Drag-and-drop PDF processing
+- **Responsive design**: Works on desktop and mobile devices
+- **GPU acceleration**: Optimized for fast inference on Hugging Face Spaces
+- **Token usage tracking**: Monitor OpenAI API usage
+- **Real-time feedback collection**: Help improve the model with your corrections
 
-- App built with [Gradio](https://github.com/gradio-app/gradio)
-- BERT retrieval code writen with AI assistance (Claude Sonnet 4)
+**[Click here to see the collected feedback dataset!](https://huggingface.co/datasets/jedick/AI4citations-feedback)**
+
+## 📊 Performance Evaluation
+
+Benchmarked on the SciFact test set with gold evidence as baseline:
+
+| Retrieval Method | Macro F1 | Speed (avg.) | Best Use Case |
+|------------------|----------|--------------|---------------|
+| **Gold evidence** | 0.834 | - | Baseline (human-selected) |
+| **BM25S** | 0.649 | 0.36s | Fast keyword matching |
+| **DeBERTa** | 0.610 | 7.00s | Semantic understanding |
+| **GPT** | 0.615 | 19.84s | Complex reasoning |
+
+The fine-tuned model achieves a **7 percentage point improvement** over single-dataset baselines through multi-dataset training.
+
+## 🛠️ Technical Architecture
+
+### Core Components
+- **Frontend**: Gradio interface with custom styling and Font Awesome icons
+- **Backend**: PyTorch Lightning with Hugging Face Transformers
+- **PDF Processing**: PyMuPDF (fitz) with text cleaning and normalization
+- **Retrieval**: Multiple engines (BM25S, DeBERTa QA, OpenAI GPT)
+- **Deployment**: Hugging Face Spaces with GPU acceleration
+- **CI Testing**: GitHub Actions workflow for integration and unit tests
+
+### Data Pipeline
+1. **PDF Text Extraction**: Multi-page processing with layout preservation
+2. **Text Normalization**: Unicode conversion, hyphen removal, sentence tokenization
+3. **Evidence Retrieval**: Method-specific processing (keyword, QA, or LLM-based)
+4. **Claim Verification**: Transformer-based classification with confidence scores
+5. **Feedback Loop**: User corrections saved for continuous improvement
+
+## 📚 Datasets
+
+The model was trained and evaluated on two high-quality datasets for claim verification in biomedical and health sciences:
+
+### SciFact
+- **Size**: 1,409 scientific claims verified against 5,183 abstracts
+- **Source**: [AllenAI SciFact Dataset](https://github.com/allenai/scifact)
+
+### Citation-Integrity  
+- **Size**: 3,063 citation instances from biomedical publications
+- **Source**: [Citation-Integrity Dataset](https://github.com/ScienceNLP-Lab/Citation-Integrity/)
+
+Both datasets were normalized with consistent labeling for robust cross-domain performance.
+
+## 🙏 Acknowledgments
+
+This project builds upon exceptional work from the research and open-source communities:
+
+### Core Technologies
+- **[Gradio](https://github.com/gradio-app/gradio)**: Web interface framework enabling easy ML app deployment
+- **[Hugging Face Transformers](https://huggingface.co/transformers/)**: State-of-the-art transformer models and tokenizers
+- **[PyTorch Lightning](https://github.com/Lightning-AI/pytorch-lightning)**: Scalable ML training framework
+
+### Models and Datasets
+- **[DeBERTa](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli)**: Base model pre-trained on multiple NLI datasets by MoritzLaurer
+- **[SciFact Dataset](https://github.com/allenai/scifact)**: Scientific claim verification dataset by Wadden et al. (2020)
+- **[Citation-Integrity Dataset](https://github.com/ScienceNLP-Lab/Citation-Integrity/)**: Biomedical citation verification by Sarol et al. (2024)
+
+### Retrieval Technologies
+- **[BM25S](https://github.com/xhluca/bm25s)**: High-performance BM25 implementation for keyword-based retrieval
+- **[PyMuPDF (fitz)](https://github.com/pymupdf/PyMuPDF)**: Robust PDF text extraction and processing
+- **[OpenAI GPT](https://platform.openai.com/docs/pricing)**: Advanced language model for complex reasoning tasks
+
+### Development Tools
+- **[NLTK](https://www.nltk.org/)**: Natural language processing utilities for tokenization
+- **[Unidecode](https://github.com/avian2/unidecode)**: Unicode to ASCII text conversion
+- **[Codecov](https://codecov.io/)**: Test coverage reporting and monitoring
+- **AI Assistance**: BERT retrieval code developed with assistance from Claude Sonnet 4
+
+### Research Foundations
+- **MultiVerS Model**: Longformer-based claim verification by Wadden et al. (2021)
+- **Natural Language Inference**: Foundational NLI datasets (MultiNLI, FEVER, ANLI)
+- **Domain Adaptation**: Cross-dataset training techniques for improved generalization
+
+For detailed technical information and experimental results, see the [ML Engineering Capstone Project](https://github.com/jedick/MLE-capstone-project) repository and associated [blog posts](https://jedick.github.io/blog/experimenting-with-transformer-models-for-citation-verification/).
+
+---
+
+**💡 Questions or Issues?** Open an issue on GitHub!

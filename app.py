@@ -86,7 +86,7 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                                 label="Retrieval Method",
                                 info="Keyword search (BM25S) or AI (DeBERTa, GPT)",
                             )
-                        get_evidence = gr.Button(value="Get Evidence")
+                        get_evidence = gr.Button(value="Get Evidence and Submit")
                         top_k = gr.Slider(
                             1,
                             10,
@@ -110,12 +110,13 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                     ### App Usage:
 
                     - Input a **Claim**, then:
-                        - Upload a PDF and click **Get Evidence** OR
+                        - Upload a PDF OR
                         - Input **Evidence** statements yourself
-                    - Make the **Prediction**:
+                    - To make the prediction with a PDF:
+                        - Click **Get Evidence and Submit**
+                    - To make the prediction after inputting or editing text:
                         - Hit 'Enter' in the **Claim** text box OR
-                        - Hit 'Shift-Enter' in the **Evidence** text box OR
-                        - Click **Get Evidence**
+                        - Hit 'Shift-Enter' in the **Evidence** text box
                     """
                     )
             with gr.Accordion("Sources", open=False):
