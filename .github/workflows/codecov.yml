@@ -3,14 +3,19 @@ on: [push, pull_request]
 jobs:
   run:
     runs-on: ubuntu-latest
+    # Add container and install pip to allow connection to local server for app integration test
+    # https://stackoverflow.com/questions/74332455/connection-refused-for-local-server-in-github-actions-workflow
     container: ubuntu
     steps:
-      - name: Checkout
+      - name: Git checkout
         uses: actions/checkout@v3
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+      - name: Install pip
+        run: |
+          apt-get update; apt-get install -y python3-pip
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run tests and collect coverage
