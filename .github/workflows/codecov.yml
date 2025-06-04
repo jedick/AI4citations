@@ -20,14 +20,18 @@ jobs:
       - name: Set up Python virtual environment
         run: |
           apt-get install -y python3-venv
-          python3 -m venv ~/myvirtualenv
-          source ~/myvirtualenv/bin/activate
+          python -m venv .venv
+      # Every run has a default PATH, so activate virtual environment in every run
+      # https://stackoverflow.com/questions/74668349/how-to-activate-a-virtualenv-in-a-github-action
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          . .venv/bin/activate
+          pip install -r requirements.txt
       - name: Run tests and collect coverage
         # Add flag to ignore errors (-i)
         # https://stackoverflow.com/questions/2386975/no-source-for-code-message-in-coverage-py
         run: |
+          . .venv/bin/activate
           coverage run -m unittest discover
           coverage report -m -i
           coverage xml -i
