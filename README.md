@@ -2,7 +2,7 @@
 [![Codecov test coverage](https://codecov.io/gh/jedick/AI4citations/graph/badge.svg)](https://app.codecov.io/gh/jedick/AI4citations)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-# AI4citations: AI-Powered Citation Verification
+# AI4citations: Automated Citation Verification
 
 The integrity of scientific literature depends on citations that are supported by the referenced source material. These citations are sometimes inaccurate, contributing to unverified claims. AI4citations provides an easy-to-use solution for automated citation verification that leverages state-of-the-art machine learning models trained on domain-specific datasets.
 
