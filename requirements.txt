@@ -1,5 +1,5 @@
 pandas
-gradio
+gradio==6.2.0
 torch
 transformers
 pymupdf

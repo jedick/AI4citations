@@ -50,31 +50,31 @@ if gr.NO_RELOAD:
         )
 
 
-# Setup theme without background image
-my_theme = gr.Theme.from_hub("NoCrypt/miku")
-my_theme.set(body_background_fill="#FFFFFF", body_background_fill_dark="#000000")
-
-# Define the HTML for Font Awesome
-font_awesome_html = '<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">'
-
 # Gradio interface setup
-with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
+with gr.Blocks() as demo:
 
     # Layout
     with gr.Row():
-        with gr.Column(scale=3):
+        with gr.Column(scale=2):
             with gr.Row():
-                gr.Markdown("# AI4citations")
-                gr.Markdown(
-                    "## *AI-powered citation verification* ([more info](https://github.com/jedick/AI4citations))"
-                )
-            claim = gr.Textbox(
-                label="Claim",
-                info="aka hypothesis",
-                placeholder="Input claim",
-            )
-            with gr.Row():
+                with gr.Column(scale=1):
+                    gr.Markdown(
+                        """
+                    # AI4citations: AI-powered citation verification
+                    1. Input a **Claim**
+                    2. **Upload a PDF** or input **Evidence**
+                    3. Make the prediction:
+                        - Click **Get Evidence and Submit** (with PDF)
+                        - Or press **Shift-Enter** in any text box
+                    """
+                    )
                 with gr.Column(scale=2):
+                    claim = gr.TextArea(
+                        label="Claim",
+                        placeholder="1. Input a claim",
+                    )
+            with gr.Row():
+                with gr.Column(scale=1):
                     with gr.Accordion("Get Evidence from PDF"):
                         pdf_file = gr.File(
                             label="Upload PDF", type="filepath", height=120
@@ -84,9 +84,8 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                                 choices=["BM25S", "DeBERTa", "GPT"],
                                 value="BM25S",
                                 label="Retrieval Method",
-                                info="Keyword search (BM25S) or AI (DeBERTa, GPT)",
+                                info="Lexical (BM25S) or semantic (DeBERTa, GPT)",
                             )
-                        get_evidence = gr.Button(value="Get Evidence and Submit")
                         top_k = gr.Slider(
                             1,
                             10,
@@ -94,102 +93,21 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                             step=1,
                             label="Top k sentences",
                         )
-                with gr.Column(scale=3):
+                        get_evidence = gr.Button(value="Get Evidence and Submit")
+                with gr.Column(scale=2):
                     evidence = gr.TextArea(
                         label="Evidence",
-                        info="aka premise",
-                        placeholder="Input evidence or use Get Evidence from PDF",
+                        info="Shift-Enter to submit",
+                        placeholder="2. Input evidence",
                     )
                     with gr.Row():
                         prompt_tokens = gr.Number(label="Prompt tokens", visible=False)
                         completion_tokens = gr.Number(
                             label="Completion tokens", visible=False
                         )
-                    gr.Markdown(
-                        """
-                    ### App Usage:
+                    prediction = gr.Label(label="Prediction")
 
-                    - Input a **Claim**, then:
-                        - Upload a PDF OR
-                        - Input **Evidence** statements yourself
-                    - To make the prediction with a PDF:
-                        - Click **Get Evidence and Submit**
-                    - To make the prediction after inputting or editing text:
-                        - Hit 'Enter' in the **Claim** text box OR
-                        - Hit 'Shift-Enter' in the **Evidence** text box
-                    """
-                    )
-            with gr.Accordion("Sources", open=False):
-                gr.Markdown(
-                    """
-                #### *Capstone project*
-                - <i class="fa-brands fa-github"></i> [jedick/MLE-capstone-project](https://github.com/jedick/MLE-capstone-project) (project repo)
-                - <i class="fa-brands fa-github"></i> [jedick/AI4citations](https://github.com/jedick/AI4citations) (app repo)
-                #### *Text Classification*
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) (fine-tuned)
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli) (base)
-                #### *Evidence Retrieval*
-                - <i class="fa-brands fa-github"></i> [xhluca/bm25s](https://github.com/xhluca/bm25s) (BM25S)
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2) (DeBERTa)
-                - <img src="https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg" style="height: 1.2em; display: inline-block;"> [gpt-4o-mini-2024-07-18](https://platform.openai.com/docs/pricing) (GPT)
-                #### *Datasets for fine-tuning*
-                - <i class="fa-brands fa-github"></i> [allenai/SciFact](https://github.com/allenai/scifact) (SciFact)
-                - <i class="fa-brands fa-github"></i> [ScienceNLP-Lab/Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity) (CitInt)
-                #### *Other sources*
-                - <img src="https://plos.org/wp-content/uploads/2020/01/logo-color-blue.svg" style="height: 1.4em; display: inline-block;"> [Medicine](https://doi.org/10.1371/journal.pmed.0030197), <i class="fa-brands fa-wikipedia-w"></i> [CRISPR](https://en.wikipedia.org/wiki/CRISPR) (evidence retrieval examples)
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [nyu-mll/multi_nli](https://huggingface.co/datasets/nyu-mll/multi_nli/viewer/default/train?row=37&views%5B%5D=train) (MNLI example)
-                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku) (theme)
-                """
-                )
-
-        with gr.Column(scale=2):
-            prediction = gr.Label(label="Prediction")
-            with gr.Accordion("Feedback"):
-                gr.Markdown(
-                    "*Provide the correct label to help improve this app*<br>**NOTE:** The claim and evidence will also be saved"
-                ),
-                with gr.Row():
-                    flag_support = gr.Button("Support")
-                    flag_nei = gr.Button("NEI")
-                    flag_refute = gr.Button("Refute")
-                gr.Markdown(
-                    "Feedback is uploaded every 5 minutes to [AI4citations-feedback](https://huggingface.co/datasets/jedick/AI4citations-feedback)"
-                ),
-            with gr.Accordion("Examples"):
-                gr.Markdown("*Examples are run when clicked*"),
-                with gr.Row():
-                    support_example = gr.Examples(
-                        examples="examples/Support",
-                        label="Support",
-                        inputs=[claim, evidence],
-                        example_labels=pd.read_csv("examples/Support/log.csv")[
-                            "label"
-                        ].tolist(),
-                    )
-                    nei_example = gr.Examples(
-                        examples="examples/NEI",
-                        label="NEI",
-                        inputs=[claim, evidence],
-                        example_labels=pd.read_csv("examples/NEI/log.csv")[
-                            "label"
-                        ].tolist(),
-                    )
-                    refute_example = gr.Examples(
-                        examples="examples/Refute",
-                        label="Refute",
-                        inputs=[claim, evidence],
-                        example_labels=pd.read_csv("examples/Refute/log.csv")[
-                            "label"
-                        ].tolist(),
-                    )
-                retrieval_example = gr.Examples(
-                    examples="examples/retrieval",
-                    label="Get Evidence from PDF",
-                    inputs=[pdf_file, claim],
-                    example_labels=pd.read_csv("examples/retrieval/log.csv")[
-                        "label"
-                    ].tolist(),
-                )
+        with gr.Column(scale=1):
             # Create dropdown menu to select the model
             model = gr.Dropdown(
                 choices=[
@@ -203,6 +121,61 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
                 label="Model",
                 info="Text classification model used for claim verification",
             )
+            with gr.Accordion("Examples"):
+                gr.Markdown("*Examples are run when clicked*"),
+                claims_example = gr.Examples(
+                    examples="examples/claims",
+                    label="Support, NEI, Refute (1, 2, 3)",
+                    inputs=[claim, evidence],
+                    example_labels=pd.read_csv("examples/claims/log.csv")[
+                        "label"
+                    ].tolist(),
+                )
+                retrieval_example = gr.Examples(
+                    examples="examples/retrieval",
+                    label="Get Evidence from PDF",
+                    inputs=[pdf_file, claim],
+                    example_labels=pd.read_csv("examples/retrieval/log.csv")[
+                        "label"
+                    ].tolist(),
+                )
+            with gr.Accordion("Feedback"):
+                gr.Markdown(
+                    "*Provide the correct label to help improve this app*<br>**NOTE:** The claim and evidence will also be saved"
+                ),
+                with gr.Row():
+                    flag_support = gr.Button("Support")
+                    flag_nei = gr.Button("NEI")
+                    flag_refute = gr.Button("Refute")
+                gr.Markdown(
+                    "Feedback is uploaded every 5 minutes to [AI4citations-feedback](https://huggingface.co/datasets/jedick/AI4citations-feedback)"
+                ),
+            with gr.Accordion("About this app", open=True):
+                gr.Markdown(
+                    """
+                - <i class="fa-brands fa-github"></i> [jedick/AI4citations](https://github.com/jedick/AI4citations) (app repo)
+                - <i class="fa-brands fa-github"></i> [jedick/MLE-capstone-project](https://github.com/jedick/MLE-capstone-project) (project repo)
+                """
+                )
+            with gr.Accordion("More info", open=False):
+                gr.Markdown(
+                    """
+                #### *Text classification*
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint](https://huggingface.co/jedick/DeBERTa-v3-base-mnli-fever-anli-scifact-citint) (fine-tuned)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli](https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli) (base)
+                #### *Evidence retrieval*
+                - <i class="fa-brands fa-github"></i> [xhluca/bm25s](https://github.com/xhluca/bm25s) (BM25S)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [deepset/deberta-v3-large-squad2](https://huggingface.co/deepset/deberta-v3-large-squad2) (DeBERTa)
+                - <img src="https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg" style="height: 1.2em; display: inline-block;"> [gpt-4o-mini-2024-07-18](https://platform.openai.com/docs/pricing) (GPT)
+                #### *Datasets for fine-tuning*
+                - <i class="fa-brands fa-github"></i> [allenai/SciFact](https://github.com/allenai/scifact) (SciFact)
+                - <i class="fa-brands fa-github"></i> [ScienceNLP-Lab/Citation-Integrity](https://github.com/ScienceNLP-Lab/Citation-Integrity) (CitInt)
+                #### *Other sources*
+                - <img src="https://plos.org/wp-content/uploads/2020/01/logo-color-blue.svg" style="height: 1.4em; display: inline-block;"> [Medicine](https://doi.org/10.1371/journal.pmed.0030197), <i class="fa-brands fa-wikipedia-w"></i> [CRISPR](https://en.wikipedia.org/wiki/CRISPR) (evidence retrieval examples)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [nyu-mll/multi_nli](https://huggingface.co/datasets/nyu-mll/multi_nli/viewer/default/train?row=37&views%5B%5D=train) (MNLI example)
+                - <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.svg" style="height: 1.2em; display: inline-block;"> [NoCrypt/miku](https://huggingface.co/spaces/NoCrypt/miku) (theme)
+                """
+                )
 
     # Functions
 
@@ -271,7 +244,7 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
             pdf_file = f"examples/retrieval/{pdf_file}"
         return pdf_file, claim
 
-    @spaces.GPU()
+    @spaces.GPU(duration=30)
     def _retrieve_with_deberta(pdf_file, claim, top_k):
         """
         Retrieve evidence using DeBERTa
@@ -390,39 +363,11 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
         api_name=False,
     )
 
-    # Handle "Support" examples
+    # Handle examples
     gr.on(
-        triggers=[support_example.dataset.select],
+        triggers=[claims_example.dataset.select],
         fn=select_example,
-        inputs=support_example.dataset,
-        outputs=[claim, evidence],
-        api_name=False,
-    ).then(
-        fn=query_model,
-        inputs=[claim, evidence],
-        outputs=prediction,
-        api_name=False,
-    )
-
-    # Handle "NEI" examples
-    gr.on(
-        triggers=[nei_example.dataset.select],
-        fn=select_example,
-        inputs=nei_example.dataset,
-        outputs=[claim, evidence],
-        api_name=False,
-    ).then(
-        fn=query_model,
-        inputs=[claim, evidence],
-        outputs=prediction,
-        api_name=False,
-    )
-
-    # Handle "Refute" examples
-    gr.on(
-        triggers=[refute_example.dataset.select],
-        fn=select_example,
-        inputs=refute_example.dataset,
+        inputs=claims_example.dataset,
         outputs=[claim, evidence],
         api_name=False,
     ).then(
@@ -494,4 +439,13 @@ with gr.Blocks(theme=my_theme, head=font_awesome_html) as demo:
 
 if __name__ == "__main__":
     # allowed_paths is needed to upload PDFs from specific example directory
-    demo.launch(allowed_paths=[f"{os.getcwd()}/examples/retrieval"])
+    allowed_paths = [f"{os.getcwd()}/examples/retrieval"]
+
+    # Setup theme without background image
+    theme = gr.Theme.from_hub("NoCrypt/miku")
+    theme.set(body_background_fill="#FFFFFF", body_background_fill_dark="#000000")
+
+    # Define the HTML for Font Awesome
+    head = '<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">'
+
+    demo.launch(allowed_paths=allowed_paths, theme=theme, head=head)
